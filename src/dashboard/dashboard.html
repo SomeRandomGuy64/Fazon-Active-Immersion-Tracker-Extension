@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Active Immersion Tracker</title>
+<link rel="icon" href="../../icons/icon-32.png">
+<script src="../ui/theme-boot.js"></script>
+<link rel="stylesheet" href="../ui/theme.css">
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+<div class="db">
+<header class="db-head">
+  <a class="db-brand" href="#" data-nav="overview" title="Overview">
+    <svg class="db-logo" viewBox="0 0 128 128" aria-hidden="true"><rect x="4" y="4" width="120" height="120" rx="28" fill="var(--fz-accent)"/><path d="M64 22 A42 42 0 1 1 22 64" fill="none" stroke="#fff" stroke-opacity="0.92" stroke-width="9" stroke-linecap="round"/><path d="M22 64 A42 42 0 0 1 64 22" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="9" stroke-linecap="round"/><path d="M54 44.5 L85 64 L54 83.5 Z" fill="#fff" stroke="#fff" stroke-width="6" stroke-linejoin="round"/></svg>
+    <span class="db-brand-t"><span class="db-title">Active Immersion Tracker</span><span class="db-sub"><span class="fz-wordmark">fazon<span>.</span>nexus</span><span class="db-tagline"> · Japanese immersion time tracker</span></span></span>
+  </a>
+  <nav class="db-nav" aria-label="Sections">
+    <a href="#" data-nav="overview">Overview</a>
+    <a href="#settings" data-nav="settings">Settings</a>
+  </nav>
+  <button type="button" class="toggle-button" data-theme-toggle role="switch" aria-checked="false" aria-label="Light mode">
+    <svg class="tg-dark" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="tgm" x1="0" x2="1"><stop offset="0" stop-color="#fde38a"/><stop offset="1" stop-color="#fee3c6"/></linearGradient></defs><circle cx="12" cy="12" r="9.5" fill="url(#tgm)"/><circle cx="8.6" cy="9.2" r="2.1" fill="#fbd27a"/><circle cx="16" cy="7.6" r="1.3" fill="#fdc98f"/><circle cx="16.4" cy="13.2" r="1.3" fill="#fdc98f"/><circle cx="7.4" cy="15.3" r="1.2" fill="#fcd977"/><circle cx="12.7" cy="17.6" r="0.75" fill="#fcd977"/></svg>
+    <svg class="tg-light" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="tgs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc800"/><stop offset="1" stop-color="#ff8a00"/></linearGradient></defs><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" stroke="url(#tgs)" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="12" cy="12" r="4.6" fill="url(#tgs)"/></svg>
+  </button>
+</header>
+
+<p class="db-err fz-error" id="err" role="alert" hidden></p>
+
+<!-- ================= overview ================= -->
+<main id="viewOverview" class="db-view">
+  <section class="fz-card db-welcome" id="welcome" hidden>
+    <h2>Nothing recorded yet</h2>
+    <p>Play a Japanese video and it's counted while it plays with sound. The toolbar popup shows what's being counted right now, and lets you mark a video or channel as Japanese if detection misses it.</p>
+    <p class="fz-small fz-muted">Coming from Mikan? <a href="#settings" data-nav="settings" data-scroll="secData">Import your Mikan history</a> · Want your hours in fazon.nexus Track? <a href="#settings" data-nav="settings" data-scroll="secSync">Connect sync</a></p>
+  </section>
+
+  <section class="fz-card db-hero" aria-labelledby="hTotal">
+    <div class="db-hero-h">
+      <div class="db-hero-totals">
+        <div class="db-hero-total db-hero-track" id="trackFig" hidden>
+          <span class="db-kicker">Active immersion · fazon.nexus Track</span>
+          <b class="db-big" id="trackTotal">0h</b>
+          <span class="db-hero-sub" id="trackSub"></span>
+        </div>
+        <div class="db-hero-total" id="trackerFig">
+          <span class="db-kicker" id="hTotal">Active immersion, all time</span>
+          <b class="db-big" id="allTime">0h</b>
+          <span class="db-hero-sub" id="since"></span>
+          <span class="db-hero-sub db-track-note" id="trackNote" hidden></span>
+        </div>
+      </div>
+      <div class="db-hero-next" id="nextMs"></div>
+    </div>
+    <div class="db-chart" id="heroChart"></div>
+    <p class="db-hero-note" id="heroNote"></p>
+    <p class="db-hero-cap" id="heroCap" hidden>Chart, milestones, projection and the figures below use this tracker’s own recordings.</p>
+  </section>
+
+  <section class="db-strip" id="strip" aria-label="At a glance"></section>
+
+  <section class="fz-card" aria-labelledby="hWeeks">
+    <div class="db-card-h">
+      <h2 id="hWeeks">Week by week</h2>
+      <span class="db-legend-inline" id="weeksLegend"></span>
+    </div>
+    <div class="db-chart" id="weeksChart"></div>
+  </section>
+
+  <div class="db-two">
+    <section class="fz-card" aria-labelledby="hCh">
+      <div class="db-card-h">
+        <h2 id="hCh">Who you're listening to</h2>
+        <span class="fz-seg" role="group" aria-label="Period" id="chRange">
+          <button type="button" data-r="week" aria-pressed="false">Week</button>
+          <button type="button" data-r="month" aria-pressed="true">Month</button>
+          <button type="button" data-r="allTime" aria-pressed="false">All time</button>
+        </span>
+      </div>
+      <p class="db-resolve" id="chResolve" aria-live="polite" hidden></p>
+      <div id="channels"></div>
+    </section>
+    <section class="fz-card" aria-labelledby="hRhythm">
+      <div class="db-card-h"><h2 id="hRhythm">Rhythm</h2><span class="db-card-sub" id="rhythmSub"></span></div>
+      <div id="heat"></div>
+      <div class="db-legend" id="heatLegend"></div>
+      <h3 class="db-h3 db-wd-h">Typical week <span class="fz-muted">· average h per day</span></h3>
+      <div class="db-wds" id="profile"></div>
+    </section>
+  </div>
+
+  <section class="fz-card" id="platformCard" aria-labelledby="hPlat" hidden>
+    <div class="db-card-h"><h2 id="hPlat">Platforms</h2></div>
+    <div class="db-plat-scroll"><table class="db-plat" id="platforms"></table></div>
+  </section>
+</main>
+
+<!-- ================= settings ================= -->
+<main id="viewSettings" class="db-view db-settings" hidden>
+  <section class="fz-card" id="secDays" aria-labelledby="hDays">
+    <div class="db-card-h"><h2 id="hDays">Days &amp; weeks</h2><span class="db-saved" id="savedDays" aria-live="polite"></span></div>
+    <div class="db-form">
+      <label class="db-lbl" for="resetTime">New day starts at</label>
+      <div class="db-field db-inline">
+        <input type="time" id="resetTime" class="fz-input db-time" step="60" required>
+        <select id="timezone" class="fz-select db-tz" aria-label="Time zone"></select>
+      </div>
+      <label class="db-lbl" for="weekStart">Week starts on</label>
+      <div class="db-field"><select id="weekStart" class="fz-select db-narrow"></select></div>
+    </div>
+    <p class="db-hint">Time after midnight still counts towards the previous day until the reset time (default 03:00 UTC, like fazon.nexus Track). Changing the reset time or time zone only affects time recorded from now on — days already recorded keep their dates.</p>
+  </section>
+
+  <section class="fz-card" id="secTarget" aria-labelledby="hTarget">
+    <div class="db-card-h"><h2 id="hTarget">Daily target</h2><span class="db-saved" id="savedTarget" aria-live="polite"></span></div>
+    <div class="db-row" style="margin-top:0">
+      <input type="number" id="dailyTarget" class="fz-input db-num" min="0" max="24" step="0.25" inputmode="decimal" placeholder="—" aria-label="Daily target in hours">
+      <span class="fz-muted fz-small">hours a day</span>
+      <button type="button" class="fz-linkbtn fz-small" id="dailyTargetClear">No target</button>
+    </div>
+    <p class="db-hint" id="targetNote">Shown as today’s progress in the popup and as the weekly reference line (× 7) on the dashboard. While sync is on and your fazon.nexus Track has an <b>Active immersion</b> weekly goal, that goal ÷ 7 is used instead.</p>
+  </section>
+
+  <section class="fz-card" id="secTracking" aria-labelledby="hTracking">
+    <div class="db-card-h"><h2 id="hTracking">Tracking</h2><span class="db-saved" id="savedTracking" aria-live="polite"></span></div>
+    <label class="fz-check"><input type="checkbox" id="countMuted">
+      <span>Count muted playback<span class="db-hint db-hint-inline">Off by default: a muted video isn’t active listening.</span></span></label>
+  </section>
+
+  <section class="fz-card" id="secSync" aria-labelledby="hSync">
+    <div class="db-card-h"><h2 id="hSync">fazon.nexus sync</h2><span class="fz-tag" id="syncBadge">Off</span></div>
+    <p class="db-p">Mirror your immersion time into your <a href="https://fazon.nexus/track/" target="_blank" rel="noopener">Track</a> on fazon.nexus. Time is added to <b>Active immersion</b>, in one sub-category per platform and day of the week — e.g. <code>YouTube - Monday</code>. Missing sub-categories are created for you, and several browsers on one account add up.</p>
+
+    <div class="db-sub-block">
+      <label class="db-lbl" for="apiKey">API key</label>
+      <div class="db-keysaved" id="keySaved" hidden>
+        <code class="db-keymask" id="keyMask"></code>
+        <span class="fz-tag accent">saved</span>
+        <button type="button" class="fz-btn small" id="keyReplace">Replace</button>
+        <button type="button" class="fz-linkbtn fz-small" id="keyRemove">Remove</button>
+      </div>
+      <div class="db-keyrow" id="keyEdit">
+        <input type="password" id="apiKey" class="fz-input" placeholder="fz_…" autocomplete="off" spellcheck="false" autocapitalize="off">
+        <button type="button" class="fz-btn db-eye" id="keyShow" aria-pressed="false" aria-controls="apiKey" title="Show key">Show</button>
+      </div>
+      <p class="db-hint"><b>Read &amp; write</b> key required — create one on your fazon.nexus profile (see <a href="https://fazon.nexus/developers/" target="_blank" rel="noopener">fazon.nexus/developers</a>). The key is stored only in this browser.</p>
+      <div class="db-row">
+        <button type="button" class="fz-btn primary" id="keySave">Save key</button>
+        <button type="button" class="fz-btn" id="keyCancel" hidden>Cancel</button>
+        <button type="button" class="fz-btn" id="keyTest">Test key</button>
+        <span class="db-msg" id="keyMsg" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="db-sub-block">
+      <div class="db-row">
+        <label class="fz-switch"><input type="checkbox" id="syncEnabled"><span>Enable sync</span></label>
+        <button type="button" class="fz-btn small" id="syncNow">Sync now</button>
+        <span class="db-msg" id="syncMsg" aria-live="polite"></span>
+      </div>
+      <dl class="db-dl" id="syncStatus"></dl>
+    </div>
+
+    <details class="db-adv">
+      <summary>Advanced</summary>
+      <label class="db-lbl" for="apiBase">API base URL</label>
+      <div class="db-keyrow">
+        <input type="url" id="apiBase" class="fz-input" spellcheck="false" placeholder="https://api.fazon.nexus">
+        <button type="button" class="fz-btn" id="apiBaseSave">Save</button>
+        <button type="button" class="fz-linkbtn fz-small" id="apiBaseReset">Default</button>
+      </div>
+      <p class="db-hint">Only for testing against a local fazond. Default: <code>https://api.fazon.nexus</code>. <span class="db-msg" id="apiBaseMsg"></span></p>
+    </details>
+  </section>
+
+  <section class="fz-card" id="secOverrides" aria-labelledby="hOv">
+    <div class="db-card-h"><h2 id="hOv">Overrides</h2><span class="db-card-sub" id="ovCount"></span></div>
+    <p class="db-hint">Videos and channels you marked from the popup. A video’s mark beats its channel’s, which beats auto-detection.</p>
+    <ul class="db-ov" id="overrides"></ul>
+  </section>
+
+  <section class="fz-card" id="secData" aria-labelledby="hData">
+    <div class="db-card-h"><h2 id="hData">Data</h2></div>
+
+    <div class="db-sub-block">
+      <h3 class="db-h3">Back up &amp; restore</h3>
+      <div class="db-row">
+        <button type="button" class="fz-btn" id="exportBtn">Export JSON</button>
+        <button type="button" class="fz-btn" id="importBtn">Import JSON…</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+        <span class="db-radios" role="radiogroup" aria-label="Import mode">
+          <label class="fz-check"><input type="radio" name="importMode" value="merge" checked><span>Merge</span></label>
+          <label class="fz-check"><input type="radio" name="importMode" value="replace"><span>Replace</span></label>
+        </span>
+      </div>
+      <p class="db-hint">Merge adds the file’s days to what’s here; Replace wipes this browser’s history first. <span class="db-msg" id="dataMsg" aria-live="polite"></span></p>
+    </div>
+
+    <details class="db-sub-block db-mikan" id="mikanBlock">
+      <summary><h3 class="db-h3">Import from Mikan 見間</h3></summary>
+      <ol class="db-steps">
+        <li>Open Mikan’s dashboard.</li>
+        <li>Press <kbd>F12</kbd> and open the <b>Console</b> tab.</li>
+        <li>Run this — it copies your history to the clipboard:
+          <div class="db-codecopy"><code id="mikanCmd">chrome.storage.local.get('watchData', d =&gt; copy(JSON.stringify(d)))</code><button type="button" class="fz-btn small" id="mikanCopy">Copy</button></div></li>
+        <li>Paste it below (or save it to a <code>.json</code> file and choose it).</li>
+      </ol>
+      <textarea id="mikanText" class="fz-input" rows="4" placeholder='{"watchData":{"2026-06-30":{"totalSeconds":…}}}' spellcheck="false"></textarea>
+      <div class="db-row">
+        <button type="button" class="fz-btn primary" id="mikanImport">Import pasted data</button>
+        <button type="button" class="fz-btn" id="mikanFileBtn">Choose file…</button>
+        <input type="file" id="mikanFile" accept="application/json,.json,.txt" hidden>
+        <span class="db-msg" id="mikanMsg" aria-live="polite"></span>
+      </div>
+      <p class="db-hint">Mikan’s days are merged into your history here. Imported history isn’t sent to your fazon.nexus Track — only time recorded by this extension is.</p>
+    </details>
+
+    <div class="db-sub-block db-danger">
+      <h3 class="db-h3">Reset</h3>
+      <p class="db-hint">Delete all recorded time and overrides from this browser. Time already synced to fazon.nexus stays there. Export first if you might want it back.</p>
+      <div class="db-row" id="resetRow"><button type="button" class="fz-btn danger" id="resetBtn">Reset all data…</button><span class="db-msg" id="resetMsg" aria-live="polite"></span></div>
+    </div>
+  </section>
+</main>
+
+<footer class="db-foot">
+  <a href="https://fazon.nexus/" target="_blank" rel="noopener">fazon.nexus</a>
+  <span aria-hidden="true">·</span>
+  <a href="https://fazon.nexus/track/" target="_blank" rel="noopener">Track</a>
+  <span aria-hidden="true">·</span>
+  <a href="https://fazon.nexus/developers/" target="_blank" rel="noopener">Developer API</a>
+  <span aria-hidden="true">·</span>
+  <span id="version"></span>
+</footer>
+</div>
+
+<div class="fz-tip" id="tip" role="tooltip" hidden></div>
+<script type="module" src="dashboard.js"></script>
+</body>
+</html>

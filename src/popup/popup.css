@@ -1,0 +1,85 @@
+/* Toolbar popup v2 — "what's happening right now?" (~360 px; the browser sizes the popup to the body). */
+body { width: 360px; padding: 12px 14px 10px; font-size: 14px; line-height: 1.5; }
+
+/* ---- header: brand left, tools right ---- */
+.pp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pp-brand, .pp-brand:visited { display: flex; align-items: center; gap: 9px; min-width: 0; color: var(--text-color); text-decoration: none; }
+.pp-brand:hover { text-decoration: none; }
+.pp-logo { width: 26px; height: 26px; flex: none; }
+.pp-brand-t { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.pp-brand-t b { font-size: 0.86em; white-space: nowrap; letter-spacing: -0.01em; }
+.pp-brand-t .fz-wordmark { font-size: 0.66em; }
+.pp-tools { display: flex; align-items: center; gap: 2px; flex: none; }
+.pp-tools .toggle-button { margin-left: 6px; }
+
+/* ---- now playing ---- */
+.pp-now {
+    margin-top: 12px; padding: 12px 13px; border-radius: 10px;
+    background: var(--fz-surface); border: 1px solid var(--fz-line); min-width: 0;
+}
+.pp-now.live { border-color: var(--fz-accent); background: linear-gradient(180deg, var(--fz-accent-soft), transparent 85%), var(--fz-surface); }
+.pp-now-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pp-state { display: inline-flex; align-items: center; gap: 7px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fz-muted); }
+.pp-now.live .pp-state { color: var(--fz-accent-ink); }
+.pp-now.warn .pp-state { color: var(--fz-warn); }
+.pp-counter { text-align: right; line-height: 1.15; flex: none; }
+.pp-counter b { display: block; font-size: 1.25em; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+.pp-now.live .pp-counter b { color: var(--fz-accent-ink); }
+.pp-counter span { font-size: 0.66em; color: var(--fz-muted); }
+.pp-chan { display: block; margin-top: 8px; font-weight: 700; font-size: 0.95em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; unicode-bidi: isolate; }
+.pp-title {
+    margin-top: 1px; font-size: 0.82em; color: var(--fz-muted); unicode-bidi: isolate; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.pp-reason { display: flex; align-items: baseline; gap: 6px; margin-top: 7px; font-size: 0.76em; }
+.pp-reason i { font-style: normal; color: var(--fz-accent-ink); }
+.pp-reason.no i { color: var(--fz-muted); }
+.pp-msg { margin: 6px 0 0; font-size: 0.8em; color: var(--fz-muted); }
+.pp-ctl { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--fz-line); }
+.pp-ctl .fz-btn { font-size: 0.74em; padding: 0.25em 0.7em; }
+.pp-ctl-ch { display: inline-flex; align-items: center; gap: 6px; font-size: 0.74em; color: var(--fz-muted); }
+.pp-ctl-ch .fz-seg button { font-size: 1em; padding: 1px 7px; }
+.pp-ctl .fz-linkbtn { font-size: 0.74em; }
+.pp-empty-h { font-weight: 700; font-size: 0.9em; margin: 2px 0 0; }
+
+/* ---- today vs target ---- */
+.pp-today { margin-top: 14px; padding: 0 2px; }
+.pp-today-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.pp-today-l { font-size: 0.78em; color: var(--fz-muted); }
+.pp-today-v { font-variant-numeric: tabular-nums; }
+.pp-today-v b { font-size: 1.15em; }
+.pp-today-v span { color: var(--fz-muted); font-size: 0.82em; }
+.pp-today .fz-bar { margin-top: 6px; height: 8px; border-radius: 4px; }
+.pp-today .fz-bar > span { border-radius: 4px; }
+.pp-today-sub { display: flex; justify-content: space-between; gap: 10px; margin-top: 5px; font-size: 0.72em; color: var(--fz-muted); }
+.pp-today-sub .met { color: var(--fz-accent-ink); font-weight: 700; }
+.pp-today .fz-linkbtn { font-size: 1em; }
+
+/* ---- 7-day strip (a button to the dashboard) ---- */
+.pp-week {
+    display: flex; align-items: flex-end; gap: 14px; width: 100%; margin-top: 14px; padding: 10px 12px 8px;
+    font: inherit; color: inherit; text-align: left; cursor: pointer;
+    background: transparent; border: 1px solid var(--fz-line); border-radius: 10px;
+}
+.pp-week:hover { border-color: var(--fz-accent); }
+.pp-wk-bars { flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; position: relative; }
+.pp-wk-col { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+.pp-wk-plot { position: relative; width: 100%; height: 38px; display: flex; align-items: flex-end; justify-content: center; }
+.pp-wk-bar { width: 100%; max-width: 18px; border-radius: 3px 3px 1px 1px; background: var(--fz-heat-2); min-height: 2px; }
+.pp-wk-bar.zero { background: var(--fz-line); }
+.pp-wk-col.today .pp-wk-bar { background: var(--fz-accent); }
+.pp-wk-col.met .pp-wk-bar:not(.zero) { background: var(--fz-heat-4); }
+.pp-wk-col.today.met .pp-wk-bar { background: var(--fz-heat-5); }
+.pp-wk-d { font-size: 0.64em; color: var(--fz-muted); line-height: 1; }
+.pp-wk-col.today .pp-wk-d { color: var(--text-color); font-weight: 700; }
+.pp-wk-target { position: absolute; left: -2px; right: -2px; border-top: 1px dashed var(--fz-muted); opacity: 0.7; pointer-events: none; }
+.pp-wk-sum { flex: none; text-align: right; line-height: 1.25; padding-bottom: 2px; }
+.pp-wk-sum b { display: block; font-size: 0.98em; font-variant-numeric: tabular-nums; }
+.pp-wk-sum span { display: block; font-size: 0.66em; color: var(--fz-muted); }
+
+.pp-err { margin: 8px 2px 0; font-size: 0.78em; }
+
+/* ---- footer: sync line / version ---- */
+.pp-foot { display: flex; align-items: center; gap: 7px; margin-top: 12px; font-size: 0.7em; color: var(--fz-muted); min-height: 1.4em; }
+.pp-foot .pp-ver { margin-left: auto; }
+.pp-foot a { white-space: nowrap; }

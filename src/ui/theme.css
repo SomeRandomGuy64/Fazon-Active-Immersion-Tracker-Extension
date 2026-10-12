@@ -1,0 +1,269 @@
+/* Shared look for the popup and dashboard — a port of fazon.nexus (Blog static/css/style.css +
+   track.css): JetBrains Mono, dark by default with the orange accent, .light-mode on <html> with
+   the green accent, surfaces/lines/muted text from the --fz-* tokens, and the 0.15 s colour fade
+   on a theme switch. theme-boot.js sets .light-mode before first paint; theme.js does the rest. */
+
+@font-face {
+    font-family: 'JetBrains Mono';
+    src: url('fonts/JetBrainsMono-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: block;
+}
+@font-face {
+    font-family: 'JetBrains Mono';
+    src: url('fonts/JetBrainsMono-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: block;
+}
+
+:root {
+    --bg-color: #111;
+    --text-color: #eee;
+    --fz-accent: #c3540a;
+    --fz-accent-hi: #ea7e35;          /* blog a:active — brighter accent for text on dark */
+    --fz-accent-ink: #e0691c;         /* accent used for text (numbers, labels) */
+    --fz-accent-soft: rgba(195, 84, 10, 0.16);
+    --fz-on-accent: #fff;
+    --fz-surface: #1a1a1a;
+    --fz-surface-2: #222;
+    --fz-line: rgba(255, 255, 255, 0.14);
+    --fz-muted: #9a9a9a;
+    --fz-bad: #e2564a;
+    --fz-bad-soft: rgba(226, 86, 74, 0.14);
+    --fz-ok: #6cbf6f;
+    --fz-warn: #d9a03f;
+    --fz-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    --fz-track: rgba(255, 255, 255, 0.07);   /* empty bar track / empty heatmap day */
+    --fz-ink-2: #a9a8a1;                       /* secondary series (track.css --tk-all) */
+    /* heatmap + bars: five steps of the accent (brighter = more on dark) */
+    --fz-heat-0: rgba(255, 255, 255, 0.07);
+    /* ≈ even CIELAB lightness steps from the empty cell (L* ≈ 17): 35 / 45 / 53 / 63 / 76 */
+    --fz-heat-1: #7a4320;
+    --fz-heat-2: #a14f15;
+    --fz-heat-3: #c3540a;
+    --fz-heat-4: #e0732a;
+    --fz-heat-5: #f7a868;
+    --fz-font: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+    --theme-fade: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, fill 0.15s ease, stroke 0.15s ease;
+    color-scheme: dark;
+}
+.light-mode {
+    --bg-color: #eee;
+    --text-color: #111;
+    --fz-accent: #4caf50;
+    --fz-accent-hi: #267f29;
+    --fz-accent-ink: #2e7d32;
+    --fz-accent-soft: rgba(76, 175, 80, 0.16);
+    --fz-surface: #ffffff;
+    --fz-surface-2: #f6f6f6;
+    --fz-line: rgba(0, 0, 0, 0.14);
+    --fz-muted: #666666;
+    --fz-bad: #cc3f34;
+    --fz-bad-soft: rgba(204, 63, 52, 0.1);
+    --fz-ok: #2e7d32;
+    --fz-warn: #a8700b;
+    --fz-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+    --fz-track: rgba(0, 0, 0, 0.07);
+    --fz-ink-2: #6b6a65;
+    /* light → darker = more */
+    --fz-heat-0: rgba(0, 0, 0, 0.07);
+    /* empty L* ≈ 94 → 83 / 73 / 63 / 51 / 36 */
+    --fz-heat-1: #a8d8aa;
+    --fz-heat-2: #7cc47f;
+    --fz-heat-3: #4caf50;
+    --fz-heat-4: #378c3b;
+    --fz-heat-5: #1f5e23;
+    color-scheme: light;
+}
+
+/* only while switching (theme.js sets .theme-fading on <html> for a moment) */
+.theme-fading :where(*, *::before, *::after) { transition: var(--theme-fade) !important; }
+
+html { background-color: var(--bg-color); }
+body {
+    margin: 0;
+    color: var(--text-color);
+    background-color: var(--bg-color);
+    font-family: var(--fz-font);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+a, a:visited { color: var(--fz-accent-ink); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+a:active { color: var(--fz-accent-hi); }
+
+:focus-visible { outline: 2px solid var(--fz-accent); outline-offset: 2px; }
+
+/* ---- wordmark: "fazon.nexus" with the dot in the accent ---- */
+.fz-wordmark, .fz-wordmark:visited {
+    display: inline-flex; align-items: baseline; gap: 0; font-weight: 700; letter-spacing: 0.02em;
+    color: var(--fz-muted); text-decoration: none; font-size: 0.8em;
+}
+.fz-wordmark span { color: var(--fz-accent); }
+.fz-wordmark:hover { color: var(--text-color); text-decoration: none; }
+
+/* ---- theme toggle: the blog's pill (60×30, accent background, knob icon slides over) ---- */
+.toggle-button {
+    position: relative; flex: none; display: block;
+    width: 60px; height: 30px; padding: 0; margin: 0;
+    border: 0; border-radius: 30px; cursor: pointer; overflow: hidden;
+    background-color: var(--fz-accent);
+    transition: background-color 0.3s ease;
+}
+.toggle-button svg {
+    position: absolute; top: 50%; left: 5px; width: 24px; height: 24px; margin-left: -2px;
+    transform: translateY(-50%);
+    transition: left 0.3s ease, transform 0.3s ease, opacity 0.2s ease;
+}
+.toggle-button .tg-dark { opacity: 1; }
+.toggle-button .tg-light { opacity: 0; }
+.light-mode .toggle-button svg { left: 45px; margin-left: 0; transform: translate(-50%, -50%); }
+.light-mode .toggle-button .tg-dark { opacity: 0; }
+.light-mode .toggle-button .tg-light { opacity: 1; }
+.toggle-button:focus-visible { outline: 2px solid var(--text-color); outline-offset: 3px; }
+/* compact pill for tight headers (popup): 46×24 */
+.toggle-button.mini { width: 46px; height: 24px; }
+.toggle-button.mini svg { width: 19px; height: 19px; left: 3px; margin-left: 0; }
+.light-mode .toggle-button.mini svg { left: 34px; }
+
+/* square icon button (header tools) */
+.fz-iconbtn {
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+    width: 30px; height: 30px; padding: 0; border-radius: 8px; cursor: pointer;
+    color: var(--fz-muted); background: transparent; border: 1px solid transparent;
+}
+.fz-iconbtn:hover { color: var(--text-color); border-color: var(--fz-line); background: var(--fz-surface); }
+
+/* Track-style goal bar (track.css .tk-goal-bar) */
+.fz-bar { position: relative; height: 6px; border-radius: 3px; background: var(--fz-line); overflow: hidden; }
+.fz-bar > span { display: block; height: 100%; border-radius: 3px; background: var(--fz-accent); transition: width 0.3s ease; }
+
+/* ---- buttons, inputs (style.css .fz-btn / .fz-input) ---- */
+.fz-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.45em;
+    font: inherit; font-size: 0.9em; line-height: 1.4; cursor: pointer;
+    padding: 0.4em 1.1em; border-radius: 6px;
+    color: var(--text-color); background: transparent; border: 1px solid var(--fz-line);
+    text-decoration: none; white-space: nowrap;
+}
+.fz-btn:visited { color: var(--text-color); }
+.fz-btn:hover:not(:disabled) { border-color: var(--fz-accent); text-decoration: none; }
+.fz-btn.primary, .fz-btn.primary:visited { background: var(--fz-accent); border-color: var(--fz-accent); color: var(--fz-on-accent); }
+.fz-btn.primary:hover:not(:disabled) { filter: brightness(1.08); }
+.fz-btn.danger { border-color: var(--fz-bad); color: var(--fz-bad); }
+.fz-btn.danger:hover:not(:disabled) { background: var(--fz-bad); color: #fff; }
+.fz-btn.danger.solid { background: var(--fz-bad); color: #fff; }
+.fz-btn.small { font-size: 0.8em; padding: 0.3em 0.8em; }
+.fz-btn:disabled { opacity: 0.45; cursor: default; }
+.fz-btn svg { flex: none; }
+
+.fz-linkbtn {
+    font: inherit; font-size: inherit; padding: 0; border: 0; background: none; cursor: pointer;
+    color: var(--fz-muted); text-decoration: underline dotted; text-underline-offset: 3px;
+}
+.fz-linkbtn:hover:not(:disabled) { color: var(--fz-accent-ink); }
+
+.fz-input, .fz-select {
+    box-sizing: border-box; width: 100%; padding: 0.5em 0.7em;
+    font: inherit; font-size: 0.9em; color: var(--text-color);
+    background: var(--bg-color); border: 1px solid var(--fz-line); border-radius: 6px;
+}
+.fz-input:focus, .fz-select:focus { outline: none; border-color: var(--fz-accent); }
+.fz-select { cursor: pointer; }
+.fz-select option { background: var(--fz-surface); color: var(--text-color); }
+textarea.fz-input { resize: vertical; min-height: 6em; line-height: 1.45; font-size: 0.8em; }
+
+.fz-muted { color: var(--fz-muted); }
+.fz-error { color: var(--fz-bad); }
+.fz-ok { color: var(--fz-ok); }
+.fz-small { font-size: 0.8em; }
+.fz-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.fz-iso { unicode-bidi: isolate; }
+
+/* ---- cards and stat tiles ---- */
+.fz-card {
+    background: var(--fz-surface); border: 1px solid var(--fz-line); border-radius: 10px;
+    padding: 16px 18px; min-width: 0;
+}
+.fz-card > h2, .fz-card-h {
+    font-size: 1em; margin: 0 0 12px; text-align: left; font-weight: 700;
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+}
+.fz-tile {
+    background: var(--fz-surface); border: 1px solid var(--fz-line); border-radius: 10px;
+    padding: 14px 8px 12px; text-align: center; min-width: 0; position: relative;
+}
+.fz-tile-v {
+    display: block; color: var(--fz-accent-ink); font-weight: 700; line-height: 1.2;
+    font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -0.01em;
+}
+.fz-tile-l {
+    display: block; margin-top: 4px; color: var(--fz-muted); font-size: 0.68em;
+    text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap;
+}
+
+/* ---- pills / tags ---- */
+.fz-tag {
+    display: inline-block; font-size: 0.72em; line-height: 1.5; padding: 0 0.6em; border-radius: 999px;
+    border: 1px solid var(--fz-line); color: var(--fz-muted); white-space: nowrap; vertical-align: 0.1em;
+}
+.fz-tag.accent { border-color: var(--fz-accent); color: var(--fz-accent-ink); background: var(--fz-accent-soft); }
+.fz-tag.bad { border-color: var(--fz-bad); color: var(--fz-bad); background: var(--fz-bad-soft); }
+
+/* ---- segmented control (track.css .tk-seg) ---- */
+.fz-seg { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.fz-seg button {
+    font: inherit; font-size: 0.75em; padding: 2px 9px; border-radius: 999px; cursor: pointer;
+    color: var(--text-color); background: transparent; border: 1px solid var(--fz-line); line-height: 1.5;
+}
+.fz-seg button:hover { border-color: var(--fz-accent); }
+.fz-seg button[aria-pressed="true"] { background: var(--fz-accent); border-color: var(--fz-accent); color: var(--fz-on-accent); }
+
+/* ---- on/off switch (checkbox) ---- */
+.fz-switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+.fz-switch input {
+    appearance: none; -webkit-appearance: none; flex: none; position: relative; margin: 0; cursor: pointer;
+    width: 40px; height: 22px; border-radius: 22px; background: var(--fz-track); border: 1px solid var(--fz-line);
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.fz-switch input::before {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--fz-muted); transition: left 0.2s ease, background-color 0.2s ease;
+}
+.fz-switch input:checked { background: var(--fz-accent); border-color: var(--fz-accent); }
+.fz-switch input:checked::before { left: 20px; background: #fff; }
+.fz-switch input:disabled { opacity: 0.45; cursor: default; }
+.fz-check { display: inline-flex; align-items: flex-start; gap: 8px; cursor: pointer; }
+.fz-check input { accent-color: var(--fz-accent); width: 16px; height: 16px; margin: 0.2em 0 0; flex: none; }
+
+/* ---- status dot ---- */
+.fz-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--fz-muted); flex: none; }
+.fz-dot.on { background: var(--fz-accent); box-shadow: 0 0 0 0 var(--fz-accent); animation: fz-pulse 1.6s ease-out infinite; }
+.fz-dot.ok { background: var(--fz-ok); }
+.fz-dot.warn { background: var(--fz-warn); }
+.fz-dot.bad { background: var(--fz-bad); }
+@keyframes fz-pulse {
+    0% { box-shadow: 0 0 0 0 var(--fz-accent-soft), 0 0 0 0 var(--fz-accent); }
+    70% { box-shadow: 0 0 0 7px transparent, 0 0 0 0 transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* ---- tooltip (track.css .fc-tip) ---- */
+.fz-tip {
+    position: fixed; z-index: 50; pointer-events: none; max-width: 260px;
+    padding: 6px 10px; font-size: 0.75rem; line-height: 1.45; color: var(--text-color);
+    background: var(--fz-surface); border: 1px solid var(--fz-line); border-radius: 6px;
+    box-shadow: var(--fz-shadow);
+}
+.fz-tip b { font-variant-numeric: tabular-nums; }
+.fz-tip .t { color: var(--fz-muted); display: block; }
+
+@media (prefers-reduced-motion: reduce) {
+    .toggle-button, .toggle-button svg, .fz-switch input, .fz-switch input::before { transition: none; }
+    .fz-dot.on { animation: none; }
+}
