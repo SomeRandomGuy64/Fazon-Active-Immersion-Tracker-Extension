@@ -76,6 +76,10 @@ body { width: 360px; padding: 12px 14px 10px; font-size: 14px; line-height: 1.5;
 .pp-wk-sum { flex: none; text-align: right; line-height: 1.25; padding-bottom: 2px; }
 .pp-wk-sum b { display: block; font-size: 0.98em; font-variant-numeric: tabular-nums; }
 .pp-wk-sum span { display: block; font-size: 0.66em; color: var(--fz-muted); }
+.pp-wk-sum .pp-wk-bar-t { display: block; width: 74px; height: 4px; margin: 3px 0 0 auto; }
+.pp-wk-sum .pp-wk-bar-t.met > span { background: var(--fz-heat-5); }
+.pp-wk-sum .pp-wk-pace { margin-top: 2px; }
+.pp-wk-sum .pp-wk-pace.ok { color: var(--fz-accent-ink); }
 
 .pp-err { margin: 8px 2px 0; font-size: 0.78em; }
 

@@ -1,7 +1,8 @@
 // Pure derivations from getStats.days ({'YYYY-MM-DD': seconds}) for the dashboard and popup:
 // cumulative series, rolling averages, streaks, pace, milestones, week buckets, weekday profile.
 // No DOM, no chrome.* — could move to src/shared/ unchanged if core ever needs them.
-import { addDays, daysBetween, weekStartOf, keyToMs, msToKey } from './format.js';
+import { addDays, daysBetween, weekStartOf, keyToMs, msToKey, WD, MO } from './format.js';
+import { trackWeekKey, trackWeekStart, trackWeekEnd } from '../shared/time.js';
 
 export const MILESTONES_H = [100, 250, 500, 1000, 1500, 2000, 3000, 5000, 10000];
 
@@ -148,6 +149,36 @@ export function trackPace(weeks, todayKey) {
     const cur = list[list.length - 1];
     if (!cur) return { pace: 0, weeks: 0 };
     return { pace: cur.active / Math.max(1, daysBetween(addDays(cur.week, 1), todayKey) + 1), weeks: 0 };
+}
+
+/**
+ * The current Track week against a Track-sourced weekly target, or null when it doesn't apply
+ * (target not from Track, or no Track value — state ok, or error with cached weeks).
+ * seconds = Track's current-week active (0 if that week isn't listed) + pendingSeconds (unsynced).
+ * Also: the UTC window, and the pace expected by now (daily × elapsed days, fractional).
+ */
+export function trackWeekProgress(st, now = st && st.now) {
+    const t = st && st.target, tr = st && st.track;
+    if (!t || t.source !== 'track' || !t.weekly || !tr) return null;
+    const hasValue = tr.state === 'ok' || (tr.state === 'error' && (tr.weeks || []).length > 0);
+    if (!hasValue) return null;
+    const key = trackWeekKey(now ?? Date.now());
+    const cur = (tr.weeks || []).filter((w) => w.week === key).pop();
+    const synced = cur ? cur.active || 0 : 0;
+    const pending = tr.pendingSeconds || 0;
+    const startMs = trackWeekStart(key), endMs = trackWeekEnd(key);
+    const elapsedDays = Math.min(7, Math.max(0, ((now ?? Date.now()) - startMs) / 864e5));
+    const daily = t.daily || t.weekly / 7;
+    return {
+        key, startMs, endMs, synced, pending, seconds: synced + pending, target: t.weekly,
+        expected: daily * elapsedDays, stale: tr.state === 'error',
+    };
+}
+
+/** "Sun 11 Oct 03:00 → Sun 18 Oct 03:00 UTC" for a Track week. */
+export function trackWeekWindow(p) {
+    const f = (ms) => { const d = new Date(ms); return `${WD[d.getUTCDay()]} ${d.getUTCDate()} ${MO[d.getUTCMonth()]} 03:00`; };
+    return `${f(p.startMs)} → ${f(p.endMs)} UTC`;
 }
 
 export { keyToMs, msToKey };

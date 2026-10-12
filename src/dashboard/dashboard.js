@@ -4,7 +4,7 @@ import { initTheme } from '../ui/theme.js';
 import { send, onStatsChanged } from '../ui/api.js';
 import { h, $, $$, setText } from '../ui/dom.js';
 import { hm, hDec, hLabel, longDay, shortDay, monthName, daysBetween, plural, ago } from '../ui/format.js';
-import { pace, milestones, projectDate, streaks, trackDays, trackPace } from '../ui/series.js';
+import { pace, milestones, projectDate, streaks, trackDays, trackPace, trackWeekProgress, trackWeekWindow } from '../ui/series.js';
 import { renderHero, renderWeeks, renderChannels, renderRhythm, renderPlatforms, setTooltipElement, hideTip } from './charts.js';
 import { initSettings, onSettingsShown, updateSettingsFromStats } from './settings.js';
 
@@ -156,13 +156,13 @@ function renderHeroHead(st, model) {
     const ms = milestones(total);
     const box = $('#nextMs');
     if (ms.next == null) { box.replaceChildren(h('span', { class: 'db-kicker' }, 'Every milestone passed'), h('b', null, '10,000 h ✓')); return; }
-    const prev = ms.passed.length ? ms.passed[ms.passed.length - 1] : 0;
-    const pct = ((total / 3600 - prev) / (ms.next - prev)) * 100;
+    // Progress towards the milestone from zero, so the bar matches the total shown beside it.
+    const pct = (total / 3600 / ms.next) * 100;
     const fill = h('span'); fill.style.width = Math.max(0, Math.min(100, pct)).toFixed(1) + '%';
     box.replaceChildren(
         h('span', { class: 'db-kicker' }, model.source === 'track' ? 'Next Track milestone' : 'Next milestone'),
         h('b', { class: 'db-next-v' }, hLabel(ms.next)),
-        h('div', { class: 'fz-bar', title: `${Math.round(pct)}% of the way from ${hLabel(prev)}` }, fill),
+        h('div', { class: 'fz-bar', title: `${hm(total)} of ${hLabel(ms.next)} (${Math.round(pct)}%)` }, fill),
         h('span', { class: 'db-hero-sub' }, `${hm(ms.next * 3600 - total)} to go`));
 
     // projection sentence
@@ -198,15 +198,33 @@ function renderStrip(st) {
     const info = h('span', { class: 'db-info-wrap' },
         h('button', { type: 'button', class: 'db-info', 'aria-describedby': 'monthlyTip', 'aria-label': 'How the monthly average is worked out' }, 'i'),
         h('span', { class: 'db-info-tip', id: 'monthlyTip', role: 'tooltip' }, 'Daily average × 30.44 (the average month length). A month you only tracked part of isn’t counted as a whole month.'));
-    const sig = [hm(st.today), hm(st.week), hm(st.month), hm(st.dailyAverage), t.daily, t.weekly, t.source, sk.current, sk.longest, sk.activeToday, st.todayKey].join('|');
+    const tw = trackWeekProgress(st);   // Track-sourced weekly goal → measure the week on Track's own total
+    const sig = [hm(st.today), hm(st.week), hm(st.month), hm(st.dailyAverage), t.daily, t.weekly, t.source, sk.current, sk.longest, sk.activeToday, st.todayKey,
+        tw && [tw.key, hm(tw.seconds), Math.floor(tw.expected / 600), tw.stale]].join('|');
     const box = $('#strip');
     if (box.dataset.sig === sig) return;
     box.dataset.sig = sig;
     const todaySub = t.daily ? (st.today >= t.daily ? `✓ ${src} met` : `${hm(t.daily - st.today)} to go`) : null;
     const weekSub = t.weekly ? (st.week >= t.weekly ? `✓ ${src} met` : `${hm(t.weekly - st.week)} to go`) : null;
+    let todayCell, weekCell;
+    if (tw) {
+        // Track keeps weekly totals only, so today stays on this tracker's time — and says so
+        todayCell = stat('Today · tracker', hm(st.today), t.daily ? (st.today >= t.daily ? '✓ daily share met' : `${hm(t.daily - st.today)} to go`) : null,
+            { bar: bar(st.today, t.daily), title: `${hm(st.today)} recorded by this tracker today${t.daily ? ` · daily share of your Track goal: ${hm(t.daily)}` : ''}. Track only stores weekly totals, so hours you log on fazon.nexus by hand aren't in this figure.` });
+        const met = tw.seconds >= tw.target;
+        const ahead = tw.seconds >= tw.expected;
+        const paceTag = met ? null : h('span', { class: 'db-pace' + (ahead ? ' ok' : '') }, ahead ? 'on pace' : `${hm(tw.expected - tw.seconds)} behind`);
+        weekCell = stat('Track week', hm(tw.seconds), met ? `✓ Track goal met (+${hm(tw.seconds - tw.target)})` : `${hm(tw.target - tw.seconds)} to go`, {
+            bar: bar(tw.seconds, tw.target), info: paceTag,
+            title: `Track week ${trackWeekWindow(tw)}: ${hm(tw.synced)} of Active immersion on fazon.nexus${tw.pending ? ` + ${hm(tw.pending)} not yet synced` : ''}${tw.stale ? ' (last value read; Track is unreachable right now)' : ''} — of your ${hm(tw.target)} weekly Track goal. ${met ? '' : ahead ? 'On pace' : `${hm(tw.expected - tw.seconds)} behind the pace`} for ${hm(t.daily || tw.target / 7)} a day.`,
+        });
+    } else {
+        todayCell = stat('Today', hm(st.today), todaySub, { bar: bar(st.today, t.daily), title: t.daily ? `${hm(st.today)} of your ${hm(t.daily)} daily ${src}` : null });
+        weekCell = stat('This week', hm(st.week), weekSub, { bar: bar(st.week, t.weekly), title: t.weekly ? `${hm(st.week)} of your ${hm(t.weekly)} weekly ${src}` : null });
+    }
     $('#strip').replaceChildren(
-        stat('Today', hm(st.today), todaySub, { bar: bar(st.today, t.daily), title: t.daily ? `${hm(st.today)} of your ${hm(t.daily)} daily ${src}` : null }),
-        stat('This week', hm(st.week), weekSub, { bar: bar(st.week, t.weekly), title: t.weekly ? `${hm(st.week)} of your ${hm(t.weekly)} weekly ${src}` : null }),
+        todayCell,
+        weekCell,
         stat(monthName(st.todayKey), hm(st.month), 'this month'),
         stat('Daily average', hm(st.dailyAverage), st.firstDay ? `since ${shortDay(st.firstDay)}` : null),
         stat('Monthly average', hm(st.monthlyAverage), 'daily avg × 30.44', { info }),

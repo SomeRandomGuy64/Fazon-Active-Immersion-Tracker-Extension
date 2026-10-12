@@ -4,6 +4,7 @@ import { initTheme } from '../ui/theme.js';
 import { send, onStatsChanged, getActiveTab, openExtensionPage, patternsForUrl, supportedHosts } from '../ui/api.js';
 import { h, $, setText } from '../ui/dom.js';
 import { clock, hm, ago, addDays, weekStartOf, weekdayOf, WD } from '../ui/format.js';
+import { trackWeekProgress, trackWeekWindow } from '../ui/series.js';
 
 const DASHBOARD = 'src/dashboard/dashboard.html';
 const openDash = (hash = '') => openExtensionPage(DASHBOARD + hash, { closeWindow: true });
@@ -166,6 +167,9 @@ function renderToday(st) {
     }
     const pct = Math.min(100, (today / t.daily) * 100);
     const met = today >= t.daily;
+    // with a Track goal, today's bar still counts only this tracker's time (Track keeps weekly totals)
+    const fromTrack = !!trackWeekProgress(st);
+    box.title = fromTrack ? `Today's time recorded by this tracker, against the daily share (${hm(t.daily)}) of your Track weekly goal. Hours you log on fazon.nexus by hand count in the Track week below, not here.` : '';
     const fill = h('span'); fill.style.width = pct.toFixed(1) + '%';
     box.replaceChildren(
         h('div', { class: 'pp-today-h' },
@@ -174,7 +178,7 @@ function renderToday(st) {
         h('div', { class: 'fz-bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(Math.round(pct)), 'aria-label': 'Daily target' }, fill),
         h('div', { class: 'pp-today-sub' },
             met ? h('span', { class: 'met' }, `✓ target met +${hm(today - t.daily)}`) : h('span', null, `${hm(t.daily - today)} to go`),
-            h('span', null, t.source === 'track' ? 'from your Track goal' : 'your daily target')),
+            h('span', null, fromTrack ? 'recorded by this tracker' : t.source === 'track' ? 'from your Track goal' : 'your daily target')),
     );
 }
 
@@ -202,6 +206,22 @@ function renderWeek(st) {
         bars.append(line);
     }
     const wk = st.week || 0;
+    const tw = trackWeekProgress(st);
+    if (tw) {
+        // bars = this tracker's days; the headline = the Track week (incl. hours logged on the site)
+        const met = tw.seconds >= tw.target, ahead = tw.seconds >= tw.expected;
+        const fill = h('span'); fill.style.width = Math.min(100, (tw.seconds / tw.target) * 100).toFixed(1) + '%';
+        $('#week').title = `Track week ${trackWeekWindow(tw)}: ${hm(tw.synced)} on fazon.nexus${tw.pending ? ` + ${hm(tw.pending)} not yet synced` : ''} of your ${hm(tw.target)} weekly goal. Bars: this tracker's days (${hm(wk)} this week).`;
+        $('#week').replaceChildren(bars,
+            h('span', { class: 'pp-wk-sum' },
+                h('span', null, 'Track week'),
+                h('b', null, hm(tw.seconds)),
+                h('span', null, met ? '✓ goal met' : `of ${hm(tw.target)}`),
+                h('span', { class: 'fz-bar pp-wk-bar-t' + (met ? ' met' : '') }, fill),
+                met ? null : h('span', { class: 'pp-wk-pace' + (ahead ? ' ok' : '') }, ahead ? 'on pace' : `${hm(tw.expected - tw.seconds)} behind`)));
+        return;
+    }
+    $('#week').title = 'Open the dashboard';
     $('#week').replaceChildren(bars,
         h('span', { class: 'pp-wk-sum' },
             h('span', null, 'This week'),

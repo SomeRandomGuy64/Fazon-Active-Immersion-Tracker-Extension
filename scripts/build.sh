@@ -6,7 +6,11 @@
 # The code needs no compiling; the browsers only differ in manifest.json:
 #   chrome:  background.service_worker only (no "scripts"), no browser_specific_settings
 #   firefox: background.scripts only (an event page; Firefox has no MV3 service workers),
-#            browser_specific_settings.gecko kept, no minimum_chrome_version
+#            browser_specific_settings.gecko kept (+ update_url), no minimum_chrome_version
+#
+# The Firefox build carries gecko.update_url so signed, self-distributed copies auto-update from
+# the updates.json that .github/workflows/release.yml publishes. Override with
+# FIREFOX_UPDATE_URL=... (or FIREFOX_UPDATE_URL= to leave it out, e.g. for a fork).
 # Requires: bash, python3, zip.
 set -euo pipefail
 
@@ -15,6 +19,7 @@ dist="$root/dist"
 cd "$root"
 
 version="$(python3 -c 'import json,sys; print(json.load(open("manifest.json"))["version"])')"
+export FIREFOX_UPDATE_URL="${FIREFOX_UPDATE_URL-https://raw.githubusercontent.com/SomeRandomGuy64/Fazon-Active-Immersion-Tracker-Extension/updates/updates.json}"
 rm -rf "$dist"
 mkdir -p "$dist"
 
@@ -31,7 +36,7 @@ for browser in chrome firefox; do
   find "$out" \( -name '.DS_Store' -o -name '*~' -o -name '*.swp' \) -delete
 
   python3 - "$browser" "$root/manifest.json" "$out/manifest.json" <<'PY'
-import json, sys
+import json, os, sys
 browser, src, dst = sys.argv[1:4]
 m = json.load(open(src, encoding="utf-8"))
 bg = m.get("background", {})
@@ -41,6 +46,9 @@ if browser == "chrome":
 else:
     m["background"] = {"scripts": bg.get("scripts") or [bg["service_worker"]], "type": bg.get("type", "module")}
     m.pop("minimum_chrome_version", None)
+    update_url = os.environ.get("FIREFOX_UPDATE_URL", "")
+    if update_url:
+        m["browser_specific_settings"]["gecko"]["update_url"] = update_url
 with open(dst, "w", encoding="utf-8") as f:
     json.dump(m, f, ensure_ascii=False, indent=2)
     f.write("\n")

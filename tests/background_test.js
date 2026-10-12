@@ -318,6 +318,25 @@ Deno.test('background end to end (shim)', async (t) => {
       s = await stats();
       assertEquals(s.track.state, 'error');
       assert(/permission/i.test(s.track.error), s.track.error);
+
+      // Firefox 140+ without the optional data-collection consent: no request is made.
+      env.setDataCollection(['browsingActivity']);
+      await send({ type: 'setSettings', patch: { apiBase: 'http://127.0.0.1:9' } });
+      reqs.length = 0;
+      await refreshTrackTotal({ force: true });
+      s = await stats();
+      assertEquals([s.track.state, reqs.length], ['error', 0]);
+      assert(/data-collection consent/.test(s.track.error), s.track.error);
+      const key = await send({ type: 'testApiKey', apiKey: 'fz_total', apiBase: 'http://127.0.0.1:9' });
+      assertEquals([key.valid, reqs.length], [false, 0]);
+      assert(/data-collection consent/.test(key.message), key.message);
+      // …and with it granted, the API is reached again.
+      env.setDataCollection(['browsingActivity', 'authenticationInfo']);
+      status = 200;
+      await refreshTrackTotal({ force: true });
+      s = await stats();
+      assertEquals([s.track.state, reqs.length > 0], ['ok', true]);
+      env.setDataCollection(undefined);
     } finally {
       globalThis.fetch = realFetch;
       await send({ type: 'setSettings', patch: { apiKey: '', apiBase: 'https://api.fazon.nexus', syncEnabled: false } });

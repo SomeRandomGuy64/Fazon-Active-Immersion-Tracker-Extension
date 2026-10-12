@@ -177,6 +177,7 @@
             let s = 0;
             if (k < '2026-06-27') s = Math.round((12 + rn() * 14) * 3600 / 36) * 36;                   // manual logging
             else for (let i = 1; i <= 7; i++) s += tracker[add(k, i)] || 0;
+            if (k === cur) s += 3 * 3600 + 25 * 60;   // logged by hand on the site this Track week (TV, a book…)
             out.push({ week: k, start: Date.parse(add(k, 1) + 'T03:00:00Z'), active: Math.round(s / 36) * 36 });
         }
         return out;

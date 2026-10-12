@@ -17,21 +17,31 @@ your fazon.nexus **Track** (Active immersion → `YouTube - Monday`, `YouTube - 
 Inspired by [Mikan 見間](https://chromewebstore.google.com/detail/kmjcmgkhjajkhgphmjgocgfdgnooojfc)
 by Jouzu Juls, whose Japanese-detection rules this extension follows and whose history it can import.
 
-## Install (unpacked)
+## Install
 
-Download the Chrome or Firefox zip from
-[Releases](https://github.com/SomeRandomGuy64/Fazon-Active-Immersion-Tracker-Extension/releases) and unzip
-it, or build both yourself:
+Downloads are on [Releases](https://github.com/SomeRandomGuy64/Fazon-Active-Immersion-Tracker-Extension/releases).
+
+- **Firefox (128+):** download `fazon-active-immersion-tracker-firefox-<version>.xpi` (signed by
+  Mozilla) and drag it onto a Firefox window, or open it with *File → Open File* / from
+  `about:addons` → ⚙ → *Install Add-on From File…*. It installs permanently and updates itself
+  when a new release is out. Firefox may ask you to allow access to youtube.com from the popup.
+- **Chrome / Chromium:** unzip `fazon-active-immersion-tracker-chrome-<version>.zip`, then
+  `chrome://extensions` → Developer mode → *Load unpacked* → the unzipped folder.
+
+Or build both yourself:
 
 ```sh
 scripts/build.sh            # → dist/chrome, dist/firefox (+ zips)
 ```
 
-- **Chrome / Chromium:** `chrome://extensions` → Developer mode → *Load unpacked* → the unzipped
-  folder (or `dist/chrome`).
-- **Firefox (128+):** `about:debugging#/runtime/this-firefox` → *Load Temporary Add-on* →
-  the Firefox zip (or `dist/firefox/manifest.json`) (temporary until restart; a signed build is needed for permanent
-  installs). Firefox may ask you to allow access to youtube.com from the popup.
+`dist/chrome` loads unpacked as above. An unsigned Firefox build only loads temporarily
+(`about:debugging#/runtime/this-firefox` → *Load Temporary Add-on* → `dist/firefox/manifest.json`,
+gone after a restart).
+
+**Data:** nothing leaves your browser unless you turn on sync. Sync sends your tracked hours per
+day (`YouTube - Monday` …) with your API key to fazon.nexus; Firefox 140+ asks for this
+("browsing activity", "authentication information") when you save the key. To find channel names,
+the extension looks up video IDs on YouTube's public oEmbed endpoint (no cookies).
 
 ## Adding a platform
 
@@ -39,9 +49,28 @@ Add `src/platforms/<id>.js` to the registry in `src/platforms/index.js`, a conte
 `src/content/` (see `youtube.js`, built on `common.js`), and its match patterns in `manifest.json`.
 Tracking, stats, sync (`<Name> - <Weekday>` sub-categories) and the UI pick it up automatically.
 
+## Releasing
+
+1. Bump `"version"` in `manifest.json` (Mozilla never signs the same version twice) and commit.
+2. Tag and push the tag:
+
+   ```sh
+   git tag v0.1.1 && git push origin main v0.1.1
+   ```
+
+[`.github/workflows/release.yml`](.github/workflows/release.yml) checks the tag matches the
+manifest, builds, lints, signs the Firefox build on addons.mozilla.org (unlisted, i.e.
+self-distributed), uploads the Chrome zip, the Firefox zip and the signed `.xpi` to the release,
+and adds the version to `updates.json` on the `updates` branch (where installed copies look for
+updates — don't delete that branch). To re-run it for an existing tag: *Actions → Release → Run
+workflow* with the tag. It needs the repository secrets `AMO_JWT_ISSUER` and `AMO_JWT_SECRET`
+(an API key from <https://addons.mozilla.org/developers/addon/api/key/>).
+
 ## Development
 
 - Tests: `deno test tests/`
+- Lint the Firefox build like AMO does for unlisted add-ons: `npx web-ext lint --source-dir
+  dist/firefox --self-hosted` (without node: `deno run -A npm:web-ext lint …`).
 - UI preview with mock data: `python3 -m http.server 8791 --bind 127.0.0.1`, then open
   `http://127.0.0.1:8791/dev/preview-dashboard.html` or `/dev/preview-popup.html?state=tracking`.
 - Design and contracts: [ARCHITECTURE.md](ARCHITECTURE.md).

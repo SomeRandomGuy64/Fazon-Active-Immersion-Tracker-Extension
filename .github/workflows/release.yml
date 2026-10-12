@@ -1,0 +1,133 @@
+# Build, sign (Firefox, AMO unlisted channel) and release.
+#
+# Trigger: push a tag vX.Y.Z whose X.Y.Z equals manifest.json "version", or run it by hand
+# (Actions → Release → Run workflow) with an existing tag.
+#
+# Needs two repository secrets — an AMO API key from
+# https://addons.mozilla.org/developers/addon/api/key/ :
+#   AMO_JWT_ISSUER  (the "JWT issuer", user:12345:67)
+#   AMO_JWT_SECRET  (the "JWT secret")
+#
+# Release assets: the Chrome zip, the unsigned Firefox zip and the signed
+# fazon-active-immersion-tracker-firefox-<version>.xpi (all re-uploaded with --clobber).
+# The `updates` branch holds updates.json, which signed Firefox installs poll (gecko.update_url,
+# set by scripts/build.sh) to auto-update.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build, sign and release (e.g. v0.1.1)'
+        required: true
+        type: string
+
+permissions:
+  contents: write   # create releases, upload assets, push the `updates` branch
+
+# One release at a time: they all write the `updates` branch.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash   # -eo pipefail
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      NAME: fazon-active-immersion-tracker
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ inputs.tag || github.ref_name }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Check the tag matches manifest.json
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+(\.[0-9]+){1,3}$ ]] || { echo "::error::'$TAG' isn't a vX.Y.Z tag"; exit 1; }
+          version="$(python3 -c 'import json; print(json.load(open("manifest.json"))["version"])')"
+          if [[ "$TAG" != "v$version" ]]; then
+            echo "::error::Tag $TAG doesn't match manifest.json version $version — bump the version, commit, and tag v$version"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "XPI=$NAME-firefox-$version.xpi" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: scripts/build.sh
+
+      # --self-hosted: the rules AMO applies to unlisted uploads (update_url is allowed there).
+      - name: Lint the Firefox build
+        run: npx --yes web-ext@10 lint --source-dir dist/firefox --self-hosted --boring
+
+      - name: Create the release if missing; upload the zips
+        run: |
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --verify-tag --title "$TAG" --generate-notes
+          fi
+          gh release upload "$TAG" --clobber \
+            "dist/$NAME-chrome-$VERSION.zip" \
+            "dist/$NAME-firefox-$VERSION.zip"
+
+      - name: Sign the Firefox build (AMO, unlisted)
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: |
+          if [[ -z "$WEB_EXT_API_KEY" || -z "$WEB_EXT_API_SECRET" ]]; then
+            echo "::error::Add the AMO_JWT_ISSUER and AMO_JWT_SECRET repository secrets (https://addons.mozilla.org/developers/addon/api/key/)"
+            exit 1
+          fi
+          # A re-run for a release that already has its signed .xpi: reuse it.
+          assets="$(gh release view "$TAG" --json assets --jq '.assets[].name')"
+          if grep -qxF "$XPI" <<<"$assets"; then
+            gh release download "$TAG" --pattern "$XPI" --dir dist --clobber
+            echo "$XPI is already on the release; not signing again."
+            exit 0
+          fi
+          mkdir -p dist/signed
+          if npx --yes web-ext@10 sign --channel=unlisted --source-dir dist/firefox \
+               --artifacts-dir dist/signed --approval-timeout 1800000 2>&1 | tee dist/sign.log; then
+            shopt -s nullglob
+            files=(dist/signed/*.xpi)
+            [[ ${#files[@]} -eq 1 ]] || { echo "::error::expected one signed .xpi, got ${#files[@]}"; exit 1; }
+            mv "${files[0]}" "dist/$XPI"
+          elif grep -qE "Version .* (already exists|was uploaded before)" dist/sign.log; then
+            # AMO never signs the same version twice: fetch the copy it signed before.
+            echo "::warning::$VERSION was already submitted to AMO; downloading the signed copy."
+            node scripts/amo-fetch-signed.mjs dist/firefox/manifest.json "dist/$XPI"
+          else
+            exit 1
+          fi
+
+      - name: Upload the signed .xpi
+        run: gh release upload "$TAG" --clobber "dist/$XPI"
+
+      - name: Publish updates.json (branch `updates`)
+        run: |
+          dir="$RUNNER_TEMP/updates"
+          if git fetch --depth=1 origin updates; then
+            git worktree add -B updates "$dir" FETCH_HEAD
+          else
+            git worktree add --orphan -b updates "$dir"
+          fi
+          link="https://github.com/$GH_REPO/releases/download/$TAG/$XPI"
+          python3 scripts/update-manifest.py "$dir/updates.json" dist/firefox/manifest.json "dist/$XPI" "$link"
+          cd "$dir"
+          git add updates.json
+          if git diff --cached --quiet; then echo "updates.json unchanged"; exit 0; fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m "updates.json: $VERSION"
+          git push origin HEAD:updates

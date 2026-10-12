@@ -12,6 +12,7 @@ No build step for the code itself: plain ES modules, no bundler, no npm dependen
 ```
 manifest.json                 # shared base manifest (core)
 scripts/build.sh              # → dist/chrome/, dist/firefox/ (+ .zip each) (core)
+scripts/update-manifest.py, amo-fetch-signed.mjs  # release helpers (.github/workflows/release.yml)
 src/background/               # service worker / event page: tracker, storage, stats, sync (core)
 src/content/                  # content scripts, one per platform (core)
 src/platforms/                # platform registry + one module per platform (core)
@@ -85,6 +86,9 @@ The API sends no CORS headers: calls are made from the background with a host pe
   local fazond testing).
 - `https://api.fazon.nexus/*` is an **optional** host permission; the UI requests it (with
   `chrome.permissions.request`, called first thing inside the click handler) when a key is saved.
+  On Firefox 140+ the same request also asks for the optional data-collection consent
+  (`data_collection: ["browsingActivity", "authenticationInfo"]`, `src/shared/consent.js`), and the
+  background makes no API call (sync, Track total, key test) until both are granted.
 
 ## Message protocol (UI ⇄ background)
 
@@ -237,10 +241,17 @@ and sync state, keeps settings, and stops old reports from being credited again.
 into `dist/chrome`, `dist/firefox` + zips (`dist/` is git-ignored). Minimums: Chrome 111, Firefox
 128 (MAIN-world content scripts, `optional_host_permissions`). Content scripts match
 `www.youtube.com`, `m.youtube.com` and `www.youtube-nocookie.com` (embeds on other sites, via
-`all_frames`), not `music.youtube.com`. Firefox `data_collection_permissions` is declared as
-`required: ["none"]` like Mikan — the coordinator may want to reconsider since optional sync sends
-hours to the user's own fazon.nexus account. No `tabs` permission is needed (tab URLs of
-YouTube pages are visible through the host permission).
+`all_frames`), not `music.youtube.com`. Firefox `data_collection_permissions`:
+`required: ["none"]`, `optional: ["browsingActivity", "authenticationInfo"]` — nothing leaves the
+browser by default; opt-in sync sends hours per "<Platform> - <Weekday>" (time on YouTube =
+browsing activity) with the user's API key (authentication information) to api.fazon.nexus.
+Firefox 140+ shows the optional categories in the permission prompt when sync is set up; Chrome and
+Firefox 128–139 have no built-in consent (`permissions.getAll()` has no `data_collection` key, which
+is how it's detected), so there the explicit key + "Sync" opt-in is the consent. The cookieless
+YouTube oEmbed lookups (video ID → channel) go only to the site the video was watched on and are
+not declared. The Firefox build also gets `gecko.update_url` (the `updates` branch's
+`updates.json`, written by `.github/workflows/release.yml`) so signed installs auto-update. No
+`tabs` permission is needed (tab URLs of YouTube pages are visible through the host permission).
 
 **Adding a platform.** `src/platforms/<id>.js` (+ entry in `index.js`), a content adapter
 `src/content/<id>.js` that calls `FaitContent.start({platform, getMedia, subscribe})` (see the

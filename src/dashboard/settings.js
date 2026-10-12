@@ -2,6 +2,7 @@
 import { send, originPattern } from '../ui/api.js';
 import { h, $, setText } from '../ui/dom.js';
 import { hm, ago, dateTime, dateOnly, maskKey, weekdayName } from '../ui/format.js';
+import { SYNC_DATA_COLLECTION, grantedDataCollection } from '../shared/consent.js';
 
 const DEFAULT_BASE = 'https://api.fazon.nexus';
 let ctx = { refresh: async () => {}, showError: () => {}, getStats: () => null };
@@ -36,11 +37,28 @@ async function save(patch, savedId) {
 function apiBase() { return (settings && settings.apiBase) || DEFAULT_BASE; }
 function apiHost() { try { return new URL(apiBase()).host; } catch { return 'the API'; } }
 
-/** chrome.permissions.request for the API origin. MUST be the first await of a click handler. */
+// Firefox 140+ has built-in data-collection consent (shared/consent.js); Chrome and older Firefox
+// don't and reject a `data_collection` key. Known from permissions.getAll() long before any click.
+let dataConsentSupported = null;
+grantedDataCollection().then((g) => { dataConsentSupported = g !== null; });
+
+/**
+ * chrome.permissions.request for the API origin — plus, on Firefox 140+, the optional
+ * data-collection consent sync needs, in the same prompt. MUST be the first await of a click
+ * handler (nothing here awaits before the request).
+ */
 function requestApiPermission(base = apiBase()) {
     const pattern = originPattern(base);
     if (!pattern) return Promise.reject(new Error('Invalid API base URL'));
-    return chrome.permissions.request({ origins: [pattern] });
+    const origins = [pattern];
+    if (dataConsentSupported === false) return chrome.permissions.request({ origins });
+    try {
+        return chrome.permissions.request({ origins, data_collection: SYNC_DATA_COLLECTION });
+    } catch (e) {
+        // Support still unknown and this browser rejected the key up front: host access only.
+        if (dataConsentSupported) throw e;
+        return chrome.permissions.request({ origins });
+    }
 }
 
 // ---------------- days & weeks / tracking ----------------

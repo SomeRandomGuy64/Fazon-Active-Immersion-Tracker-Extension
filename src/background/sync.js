@@ -10,6 +10,7 @@ import { planSync, patchBody, markSynced, pruneLedger, pendingSeconds, planSubca
 import { trackWeekKey, trackWeekStart, addDays } from '../shared/time.js';
 import { update, read, emptySyncState } from './store.js';
 import { apiOriginPattern } from './settings.js';
+import { hasSyncDataConsent } from '../shared/consent.js';
 import { syncActive } from './tracker.js';
 
 const TIMEOUT_MS = 20_000;
@@ -52,12 +53,22 @@ async function api(settingsLike, method, path, body) {
 
 const errText = (r) => r.body?.error || `HTTP ${r.status}`;
 
-async function hasApiPermission(apiBase) {
+/**
+ * Why the API can't be called yet, or null: the optional host permission for `apiBase`, and on
+ * Firefox 140+ the optional data-collection consent (shared/consent.js). Both are requested
+ * together when a key is saved / sync is turned on.
+ */
+async function apiAccessProblem(apiBase) {
+  const host = new URL(apiBase).host;
+  let origin = false;
   try {
-    return await chrome.permissions.contains({ origins: [apiOriginPattern(apiBase)] });
-  } catch {
-    return false;
+    origin = await chrome.permissions.contains({ origins: [apiOriginPattern(apiBase)] });
+  } catch { /* treated as not granted */ }
+  if (!origin) return `No permission to reach ${host}. Save the API key again in Settings to grant it.`;
+  if (!(await hasSyncDataConsent())) {
+    return `Firefox's data-collection consent for sync isn't granted. Save the API key again in Settings to allow it.`;
   }
+  return null;
 }
 
 /** The public `sync` object for getStats / syncNow. */
@@ -126,11 +137,9 @@ async function doSync(manual) {
     if (st0.syncState.state === 'auth-error') return publicSync(st0);
     if (now < (st0.syncState.nextAttemptAt || 0)) return publicSync(st0);
   }
-  if (!(await hasApiPermission(settings.apiBase))) {
-    await setSyncState({
-      state: 'error',
-      lastError: `No permission to reach ${new URL(settings.apiBase).host}. Save the API key again in Settings to grant it.`,
-    });
+  const accessProblem = await apiAccessProblem(settings.apiBase);
+  if (accessProblem) {
+    await setSyncState({ state: 'error', lastError: accessProblem });
     return publicSync(await read());
   }
 
@@ -361,9 +370,10 @@ function refreshTotal(settings, { force }) {
     const base = { base: settings.apiBase, key: fingerprint(settings.apiKey) };
     const prev = totalIsFor(t, settings) ? t : null;
     let next;
-    if (!(await hasApiPermission(settings.apiBase))) {
+    const accessProblem = await apiAccessProblem(settings.apiBase);
+    if (accessProblem) {
       next = { ...base, state: 'error', hundredths: prev?.hundredths ?? null, weeks: prev?.weeks ?? null, fetchedAt: prev?.fetchedAt ?? null, triedAt: Date.now(),
-        error: `No permission to reach ${new URL(settings.apiBase).host}. Save the API key again in Settings to grant it.` };
+        error: accessProblem };
     } else {
       try {
         const { sum, weeks } = await fetchActiveAllTime(settings);
@@ -431,9 +441,8 @@ export function fingerprint(key) {
 export async function testApiKey({ apiKey, apiBase }) {
   const settings = { apiKey: String(apiKey || '').trim(), apiBase };
   if (!settings.apiKey) return { valid: false, canWrite: null, message: 'Enter an API key.' };
-  if (!(await hasApiPermission(apiBase))) {
-    return { valid: false, canWrite: null, message: `No permission to reach ${new URL(apiBase).host} yet.` };
-  }
+  const accessProblem = await apiAccessProblem(apiBase);
+  if (accessProblem) return { valid: false, canWrite: null, message: accessProblem };
   let r;
   try {
     r = await api(settings, 'GET', '/subcats');

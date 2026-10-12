@@ -22,9 +22,12 @@ const event = () => {
   return { addListener: (f) => fns.push(f), _fire: (...a) => fns.map((f) => f(...a)), _fns: fns };
 };
 
-export function installChrome({ granted = [] } = {}) {
+// dataCollection: undefined = no built-in data consent (Chrome, Firefox < 140: getAll() has no
+// `data_collection` key); an array = Firefox 140+ with those categories granted.
+export function installChrome({ granted = [], dataCollection } = {}) {
   const tabs = new Map();
   const grantedSet = new Set(granted);
+  let dc = dataCollection;
   const broadcasts = [];
   const icons = new Map();
   const alarms = new Map();
@@ -54,6 +57,7 @@ export function installChrome({ granted = [] } = {}) {
     },
     permissions: {
       async contains({ origins = [] }) { return origins.every((o) => grantedSet.has(o)); },
+      async getAll() { return { origins: [...grantedSet], permissions: [], ...(dc ? { data_collection: [...dc] } : {}) }; },
     },
     action: {
       async setIcon({ tabId, path }) { icons.set(tabId, { path }); },
@@ -78,6 +82,7 @@ export function installChrome({ granted = [] } = {}) {
   return {
     chrome, send, tabs, broadcasts, icons, alarms,
     grant: (o) => grantedSet.add(o),
+    setDataCollection: (list) => { dc = list; },
     fireAlarm: (name) => chrome.alarms.onAlarm._fire({ name }),
   };
 }
