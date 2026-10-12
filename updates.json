@@ -1,0 +1,13 @@
+{
+  "addons": {
+    "active-immersion-tracker@fazon.nexus": {
+      "updates": [
+        {
+          "version": "0.1.1",
+          "update_link": "https://github.com/SomeRandomGuy64/Fazon-Active-Immersion-Tracker-Extension/releases/download/v0.1.1/fazon-active-immersion-tracker-firefox-0.1.1.xpi",
+          "update_hash": "sha256:6c836a78964398a6b24ae16ff9c12d67a93a487d9665c8b154dd00b9b41c0ff7"
+        }
+      ]
+    }
+  }
+}
