@@ -184,7 +184,7 @@ function renderHeroHead(st, model) {
 }
 
 function stat(label, value, sub, extra) {
-    return h('div', { class: 'db-stat', title: extra && extra.title }, h('span', { class: 'db-stat-l' }, label, extra && extra.info), h('b', { class: 'db-stat-v' }, value), extra && extra.bar, sub ? h('span', { class: 'db-stat-s' }, sub) : null);
+    return h('div', { class: 'db-stat', title: extra && extra.title }, h('span', { class: 'db-stat-l' }, label, extra && extra.info), h('b', { class: 'db-stat-v' }, value), extra && extra.bar, sub ? h('span', { class: 'db-stat-s' }, sub) : null, extra && extra.foot);
 }
 function bar(v, t) {
     if (!t) return null;
@@ -215,7 +215,7 @@ function renderStrip(st) {
         const ahead = tw.seconds >= tw.expected;
         const paceTag = met ? null : h('span', { class: 'db-pace' + (ahead ? ' ok' : '') }, ahead ? 'on pace' : `${hm(tw.expected - tw.seconds)} behind`);
         weekCell = stat('Track week', hm(tw.seconds), met ? `✓ Track goal met (+${hm(tw.seconds - tw.target)})` : `${hm(tw.target - tw.seconds)} to go`, {
-            bar: bar(tw.seconds, tw.target), info: paceTag,
+            bar: bar(tw.seconds, tw.target), foot: paceTag, // under the figures, so the values stay aligned across cells
             title: `Track week ${trackWeekWindow(tw)}: ${hm(tw.synced)} of Active immersion on fazon.nexus${tw.pending ? ` + ${hm(tw.pending)} not yet synced` : ''}${tw.stale ? ' (last value read; Track is unreachable right now)' : ''} — of your ${hm(tw.target)} weekly Track goal. ${met ? '' : ahead ? 'On pace' : `${hm(tw.expected - tw.seconds)} behind the pace`} for ${hm(t.daily || tw.target / 7)} a day.`,
         });
     } else {

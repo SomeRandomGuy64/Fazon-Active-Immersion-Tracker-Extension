@@ -128,6 +128,7 @@ body { font-size: 16px; }
 .db-stat .fz-bar { height: 4px; margin: 3px 0 1px; }
 .db-stat .fz-bar.met > span { background: var(--fz-heat-5); }
 .db-pace { margin-left: 0; padding: 0 6px; border-radius: 999px; font-size: 0.92em; line-height: 1.5; border: 1px solid var(--fz-line); color: var(--fz-muted); white-space: nowrap; }
+.db-stat .db-pace { align-self: flex-start; margin-top: 4px; font-size: 0.68em; }
 .db-pace.ok { border-color: var(--fz-accent); color: var(--fz-accent-ink); background: var(--fz-accent-soft); }
 @media (max-width: 860px) {
     .db-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
