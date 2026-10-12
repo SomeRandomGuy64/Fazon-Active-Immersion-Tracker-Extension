@@ -39,7 +39,7 @@ export function averages(totalSeconds, firstDay, todayKey) {
  */
 export function computeStats({ days = {}, now, settings = {}, platformNames = {}, live = {}, liveVideos = {}, channelData = null }) {
   const todayKey = dayKey(now, settings);
-  const weekKey = weekStartKey(todayKey, settings.weekStart ?? 1);
+  const weekKey = weekStartKey(todayKey, settings.weekStart ?? 0);
   const monthKey = monthKeyOf(todayKey);
 
   // Fold live (not yet credited) seconds into today so counters tick smoothly.

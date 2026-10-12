@@ -214,7 +214,7 @@ export function nextDayStart(ms, settings) {
 }
 
 /** First day key of the week containing `key`, weeks starting on `weekStart` (0=Sun … 6=Sat). */
-export function weekStartKey(key, weekStart = 1) {
+export function weekStartKey(key, weekStart = 0) {
   const ws = ((Number(weekStart) % 7) + 7) % 7;
   return addDays(key, -((weekdayOf(key) - ws + 7) % 7));
 }

@@ -55,7 +55,7 @@ owns all clocks, storage and sync.
   Mon 03:00 UTC → Tue 03:00 UTC is `Monday`.
 - Stored history is keyed by day key at the moment time is credited; changing the reset only
   affects time recorded afterwards.
-- **This week** starts on a user-selectable weekday (default Monday). **This month** = day keys
+- **This week** starts on a user-selectable weekday (default Sunday, matching fazon.nexus Track weeks). **This month** = day keys
   in the current calendar month.
 - **Daily average** = all-time total ÷ number of days from the first day with any time through
   today (inclusive).
@@ -126,7 +126,7 @@ Every response has `ok: true` or `ok: false, error: string`.
 }
 ```
 
-`settings`: `{ resetTime: '03:00', timezone: 'UTC' | 'local' | IANA, weekStart: 1 /*0=Sun..6*/,
+`settings`: `{ resetTime: '03:00', timezone: 'UTC' | 'local' | IANA, weekStart: 0 /*0=Sun..6*/,
 apiKey: '' , syncEnabled: false, apiBase: 'https://api.fazon.nexus' }`.
 
 `sync`: `{ state: 'off'|'ok'|'pending'|'error'|'auth-error', lastSyncAt, lastError, pendingSeconds,

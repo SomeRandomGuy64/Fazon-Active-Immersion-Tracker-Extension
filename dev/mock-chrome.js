@@ -10,7 +10,7 @@
 //   target=track|manual|none   daily/weekly target source (default track; none when empty=1)
 //   state=ad|checking|buffering also work (v2 popup states)
 //   resolve=1          getStats.resolve: channel lookups for imported history in progress
-//   weekstart=0..6     settings.weekStart (default 1 = Monday)
+//   weekstart=0..6     settings.weekStart (default 0 = Sunday)
 //   track=ok|loading|error|stale|off   getStats.track: all-time Track active total + weeks (stale = error
 //                      with a cached value; default ok when a
 //                      key is set — i.e. not empty=1 — else off)
@@ -62,7 +62,7 @@
     // ---------- settings / sync / overrides ----------
     const TARGET_SRC = q.get('target') || (EMPTY ? 'none' : 'track');
     const settings = {
-        resetTime: '03:00', timezone: 'UTC', weekStart: Number(q.get('weekstart') ?? 1), countMuted: false,
+        resetTime: '03:00', timezone: 'UTC', weekStart: Number(q.get('weekstart') ?? 0), countMuted: false,
         dailyTargetMinutes: TARGET_SRC === 'manual' ? 180 : TARGET_SRC === 'track' ? 150 : null,
         apiKey: EMPTY || SYNC === 'off' ? '' : 'fz_ab12' + 'x'.repeat(39) + 'Q9z',
         syncEnabled: !EMPTY && SYNC !== 'off',

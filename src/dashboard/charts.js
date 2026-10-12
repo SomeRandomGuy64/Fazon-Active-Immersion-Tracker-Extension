@@ -178,7 +178,7 @@ export function renderWeeks(box, st) {
 }
 
 function drawWeeks(box, W, st) {
-    const ws = Number(st.settings?.weekStart ?? 1);
+    const ws = Number(st.settings?.weekStart ?? 0);
     const days = st.days || {};
     const H = W < 520 ? 190 : 220;
     const P = { l: 40, r: 40, t: 16, b: 26 };
@@ -328,7 +328,7 @@ function heatThresholds(st, keys) {
 let heatT = [1, 2, 3, 4];
 
 function drawHeat(box, W, st) {
-    const ws = Number(st.settings?.weekStart ?? 1);
+    const ws = Number(st.settings?.weekStart ?? 0);
     const { first, weeks } = heatRange(st.firstDay, st.todayKey, ws, 12, 53);
     const LEFT = 28, TOP = 16;
     const pitch = Math.max(11, Math.min(20, Math.floor((W - LEFT) / weeks)));
@@ -394,7 +394,7 @@ function drawLegend(box, st) {
 }
 
 function drawProfile(box, st) {
-    const ws = Number(st.settings?.weekStart ?? 1);
+    const ws = Number(st.settings?.weekStart ?? 0);
     const prof = weekdayProfile(st.days || {}, st.firstDay, st.todayKey);
     const max = Math.max(...prof, 1);
     const order = Array.from({ length: 7 }, (_, i) => (ws + i) % 7);

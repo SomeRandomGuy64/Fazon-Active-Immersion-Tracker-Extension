@@ -183,7 +183,7 @@ function renderToday(st) {
 }
 
 function renderWeek(st) {
-    const ws = Number(st.settings?.weekStart ?? 1);
+    const ws = Number(st.settings?.weekStart ?? 0);
     const start = weekStartOf(st.todayKey, ws);
     const days = st.days || {};
     const t = st.target || {};

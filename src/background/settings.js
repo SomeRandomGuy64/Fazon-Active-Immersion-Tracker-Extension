@@ -7,7 +7,7 @@ export const DEFAULT_API_BASE = 'https://api.fazon.nexus';
 export const DEFAULT_SETTINGS = Object.freeze({
   resetTime: '03:00',
   timezone: 'UTC',          // 'UTC' | 'local' | IANA zone
-  weekStart: 1,             // 0 = Sunday … 6 = Saturday
+  weekStart: 0,             // 0 = Sunday … 6 = Saturday (Sunday, like fazon.nexus Track weeks)
   countMuted: false,        // a muted video isn't listening, so it doesn't count by default
   dailyTargetMinutes: null, // manual daily target (used when there's no Track goal); null = none
   apiKey: '',
