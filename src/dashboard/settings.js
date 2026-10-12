@@ -79,9 +79,9 @@ function fillTimezones(current) {
 function fillWeekStart(current) {
     const sel = $('#weekStart');
     if (!sel.options.length) {
-        for (const d of [1, 2, 3, 4, 5, 6, 0]) sel.append(h('option', { value: String(d) }, weekdayName(d, true)));
+        for (const d of [0, 1, 2, 3, 4, 5, 6]) sel.append(h('option', { value: String(d) }, weekdayName(d, true)));
     }
-    sel.value = String(current ?? 1);
+    sel.value = String(current ?? 0);
 }
 
 function fillForm() {
