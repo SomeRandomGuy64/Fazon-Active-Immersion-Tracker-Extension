@@ -13,7 +13,7 @@
   const REQUEST = 'fait:yt-request';
   const DOM_FALLBACK_MS = 3000;
 
-  const playerData = new Map(); // videoId → {title, author, channelId, captionLanguages}
+  const playerData = new Map(); // videoId → {title, author, channelId, channelHandle, captionLanguages}
   let currentByPlayer = {};      // {movie_player: videoId, 'shorts-player': videoId}
   const firstSeen = new Map();   // videoId → ms
   const listeners = [];
@@ -33,6 +33,7 @@
       playerData.set(d.videoId, {
         title: s(d.title), author: s(d.author, 200),
         channelId: /^UC[\w-]{22}$/.test(d.channelId) ? d.channelId : '',
+        channelHandle: /^@[^/?#\s]{1,100}$/.test(d.channelHandle) ? d.channelHandle : '',
         captionLanguages: Array.isArray(d.captionLanguages) ? d.captionLanguages.map((l) => s(l, 20)).filter(Boolean) : null,
       });
       if (playerData.size > 100) playerData.delete(playerData.keys().next().value);
@@ -135,7 +136,7 @@
     const dom = domIsCurrent(videoId) && fromUrl ? { title: domTitle(), ...domChannel() } : { title: '', name: '', alias: null };
     const title = pd?.title || dom.title;
     const channel = pd?.author || dom.name;
-    const aliases = [pd?.channelId, dom.alias].filter(Boolean);
+    const aliases = [...new Set([pd?.channelId, pd?.channelHandle, dom.alias].filter(Boolean))];
 
     let detection = null;
     if (pd && pd.captionLanguages !== null) {

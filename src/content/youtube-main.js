@@ -19,11 +19,14 @@
     const d = r?.videoDetails;
     if (!d?.videoId) return null;
     const tracks = r?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+    // The @handle, so a channel live-tracked by UC id merges with one resolved by handle (oEmbed).
+    const owner = /youtube\.com\/(@[^/?#]+)/.exec(str(r?.microformat?.playerMicroformatRenderer?.ownerProfileUrl));
     return {
       videoId: str(d.videoId),
       title: str(d.title),
       author: str(d.author),
       channelId: str(d.channelId),
+      channelHandle: owner ? owner[1] : '',
       captionLanguages: Array.isArray(tracks) ? tracks.map((t) => str(t?.languageCode)).filter(Boolean) : null,
       playerId,
     };
@@ -41,7 +44,7 @@
         try {
           const v = typeof p.getVideoData === 'function' ? p.getVideoData() : null;
           if (v?.video_id) {
-            data = { videoId: str(v.video_id), title: str(v.title), author: str(v.author), channelId: '', captionLanguages: null, playerId: p.id };
+            data = { videoId: str(v.video_id), title: str(v.title), author: str(v.author), channelId: '', channelHandle: '', captionLanguages: null, playerId: p.id };
           }
         } catch { /* ignore */ }
       }

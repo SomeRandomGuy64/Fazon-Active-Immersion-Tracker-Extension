@@ -182,12 +182,14 @@ schema 1, serialised read-modify-write), `tracker.js` (crediting, per-tab state,
 
 **Detection (YouTube), Mikan-compatible.** `youtube-main.js` runs in the MAIN world (manifest
 `"world": "MAIN"`, read-only: `ytInitialPlayerResponse`, `movie_player.getPlayerResponse()` /
-`getVideoData()`) and posts `{videoId, title, author, channelId, captionLanguages}` to the
+`getVideoData()`) and posts `{videoId, title, author, channelId, channelHandle, captionLanguages}` to the
 isolated adapter. Rules (`FaitContent.detectJapanese`): a `ja` caption track (manual or
 auto-generated) → Japanese; else title has kana and (kana+kanji)/length > 0.3; else channel name
 has kana and that ratio > 0.1; else not Japanese. Without player data after 3 s it falls back to
 the DOM title/channel. Channel overrides are keyed by the `UC…` channel id when known; the
-`@handle` from the page is kept as an alias and also matched.
+`@handle` (from the player's `microformat…ownerProfileUrl`, else the page) is kept as an alias
+and also matched. Sending both ids together is what merges a channel live-tracked by UC id with
+the same channel resolved by handle only (oEmbed, i.e. Mikan imports).
 
 **Counting.** The content script ticks every second (plus media events). Wall time between two
 ticks is credited when the video was playing at the earlier one; a gap over 2.5 s (throttled

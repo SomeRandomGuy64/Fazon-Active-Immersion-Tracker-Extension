@@ -36,6 +36,23 @@ Deno.test('alias merge: handle-only channel merges into the UC id; handles ignor
   assertEquals(registerChannel(st, 'youtube', [], 'x').key, null);
 });
 
+Deno.test('alias merge: an existing handle-keyed and an existing UC-keyed channel merge', () => {
+  const st = emptyChannelState();
+  // Mikan import resolved via oEmbed (handle only); live tracking reported only the UC id.
+  const h = registerChannel(st, 'youtube', ['@HiguchiKaede'], '樋口楓【にじさんじ所属】', 1).key;
+  const u = registerChannel(st, 'youtube', [UC], '樋口楓【にじさんじ所属】', 2).key;
+  setVideoChannel(st, 'youtube:aaaaaaaaaaa', h);
+  setVideoChannel(st, 'youtube:bbbbbbbbbbb', u);
+  assertEquals(Object.keys(st.channels).length, 2);
+  // The player's ownerProfileUrl now gives both ids together: one channel, both videos on it.
+  const m = registerChannel(st, 'youtube', [UC, '@HiguchiKaede'], '樋口楓【にじさんじ所属】', 3);
+  assertEquals(m.key, u);
+  assert(m.changed);
+  assertEquals(Object.keys(st.channels), [u]);
+  assertEquals(canonicalOf(st, st.videos['youtube:aaaaaaaaaaa'].ch), u);
+  assertEquals(canonicalOf(st, st.videos['youtube:bbbbbbbbbbb'].ch), u);
+});
+
 Deno.test('ensureVideo queues once; a known channel dequeues', () => {
   const st = emptyChannelState();
   assert(ensureVideo(st, 'youtube:bbbbbbbbbbb'));
