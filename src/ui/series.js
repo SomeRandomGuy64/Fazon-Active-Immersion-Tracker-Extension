@@ -3,8 +3,7 @@
 // No DOM, no chrome.* — could move to src/shared/ unchanged if core ever needs them.
 import { addDays, daysBetween, weekStartOf, keyToMs, msToKey, WD, MO } from './format.js';
 import { trackWeekKey, trackWeekStart, trackWeekEnd } from '../shared/time.js';
-
-export const MILESTONES_H = [100, 250, 500, 1000, 1500, 2000, 3000, 5000, 10000];
+import { DEFAULT_MILESTONES_H } from '../shared/milestones.js';
 
 /** [{key, day, total}] from firstDay → today (every calendar day, zero days included). */
 export function cumulative(days, firstDay, todayKey) {
@@ -31,10 +30,11 @@ export function windowAverage(days, endKey, n, firstDay) {
 /** Recent pace in seconds/day: the last 30 days ending today (shorter if the history is). */
 export function pace(days, todayKey, firstDay, n = 30) { return windowAverage(days, todayKey, n, firstDay); }
 
-/** {passed: [h…], next: h|null} for an all-time total in seconds. */
-export function milestones(totalSeconds) {
+/** {passed: [h…], next: h|null} for an all-time total in seconds, over ascending hour milestones. */
+export function milestones(totalSeconds, list) {
+    const ms = list && list.length ? list : DEFAULT_MILESTONES_H;
     const h = totalSeconds / 3600;
-    return { passed: MILESTONES_H.filter((m) => m <= h), next: MILESTONES_H.find((m) => m > h) ?? null };
+    return { passed: ms.filter((m) => m <= h), next: ms.find((m) => m > h) ?? null };
 }
 
 /** Day key on which `targetH` is reached at `paceSec`/day from `totalSec` on `todayKey`, or null. */

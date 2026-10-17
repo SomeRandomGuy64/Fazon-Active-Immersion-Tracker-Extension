@@ -122,6 +122,16 @@
     <p class="db-hint" id="targetNote">Shown as today’s progress in the popup and as the weekly reference line (× 7) on the dashboard. While sync is on and your fazon.nexus Track has an <b>Active immersion</b> weekly goal, that goal ÷ 7 is used instead.</p>
   </section>
 
+  <section class="fz-card" id="secMilestones" aria-labelledby="hMilestones">
+    <div class="db-card-h"><h2 id="hMilestones">Milestones</h2><span class="db-saved" id="savedMilestones" aria-live="polite"></span></div>
+    <div class="db-row" style="margin-top:0">
+      <input type="text" id="milestones" class="fz-input db-ms-input" inputmode="numeric" spellcheck="false" autocomplete="off" aria-label="Milestones in hours, separated by commas" aria-describedby="milestonesHint">
+      <span class="fz-muted fz-small">hours</span>
+      <button type="button" class="fz-linkbtn fz-small" id="milestonesReset">Defaults</button>
+    </div>
+    <p class="db-hint" id="milestonesHint">Whole hours separated by commas, e.g. <code>100, 250, 500, 1000</code> — drawn as lines on the dashboard chart, with the next one as your goal and projection. Order doesn’t matter. <span class="db-msg" id="milestonesMsg" aria-live="polite"></span></p>
+  </section>
+
   <section class="fz-card" id="secTracking" aria-labelledby="hTracking">
     <div class="db-card-h"><h2 id="hTracking">Tracking</h2><span class="db-saved" id="savedTracking" aria-live="polite"></span></div>
     <label class="fz-check"><input type="checkbox" id="countMuted">

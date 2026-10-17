@@ -128,19 +128,20 @@ const hasTrack = (st) => {
  * pace = last 4 complete Track weeks), else this tracker's own days (30-day pace).
  */
 function heroModel(st) {
+    const milestonesH = st.settings && st.settings.milestonesH;
     if (hasTrack(st)) {
         const t = st.track;
         const pend = t.pendingSeconds || 0;
         const { days, firstDay } = trackDays(t.weeks, st.todayKey, pend);
         const p = trackPace(t.weeks, st.todayKey);
         return {
-            source: 'track', days, firstDay, todayKey: st.todayKey, total: t.activeAllTime + pend, paceSec: p.pace,
+            source: 'track', days, firstDay, todayKey: st.todayKey, total: t.activeAllTime + pend, paceSec: p.pace, milestonesH,
             basis: p.weeks ? `Track pace over the last ${plural(p.weeks, 'complete week')}` : 'Track pace this week',
         };
     }
     const span = st.firstDay ? daysBetween(st.firstDay, st.todayKey) + 1 : 0;
     return {
-        source: 'tracker', days: st.days || {}, firstDay: st.firstDay, todayKey: st.todayKey, total: st.allTime,
+        source: 'tracker', days: st.days || {}, firstDay: st.firstDay, todayKey: st.todayKey, total: st.allTime, milestonesH,
         paceSec: pace(st.days || {}, st.todayKey, st.firstDay), basis: span < 30 ? `${plural(span, 'day')} so far` : '30-day pace',
     };
 }
@@ -153,9 +154,13 @@ function renderHeroHead(st, model) {
     setText($('#since'), st.firstDay ? `since ${longDay(st.firstDay)} · ${plural(active, 'active day')} of ${span}` : 'Your first session will start the count.');
 
     const total = model.total, paceSec = model.paceSec;
-    const ms = milestones(total);
+    const ms = milestones(total, model.milestonesH);
     const box = $('#nextMs');
-    if (ms.next == null) { box.replaceChildren(h('span', { class: 'db-kicker' }, 'Every milestone passed'), h('b', null, '10,000 h ✓')); return; }
+    if (ms.next == null) {
+        box.replaceChildren(h('span', { class: 'db-kicker' }, 'Every milestone passed'), h('b', null, `${hLabel(ms.passed[ms.passed.length - 1])} ✓`));
+        $('#heroNote').replaceChildren();
+        return;
+    }
     // Progress towards the milestone from zero, so the bar matches the total shown beside it.
     const pct = (total / 3600 / ms.next) * 100;
     const fill = h('span'); fill.style.width = Math.max(0, Math.min(100, pct)).toFixed(1) + '%';
@@ -240,7 +245,7 @@ function renderOverview(st) {
     renderResolve(st);
     // charts change at most once a minute while something plays
     const sig = [st.todayKey, st.settings?.weekStart, Math.floor(st.allTime / 60), st.target?.weekly, (st.channels || []).length, Object.keys(st.byPlatform || {}).length,
-        model.source, Math.floor(model.total / 60), st.track?.weeks?.length || 0].join('|');
+        model.source, Math.floor(model.total / 60), st.track?.weeks?.length || 0, String(model.milestonesH || '')].join('|');
     if (sig === chartSig) return;
     chartSig = sig;
     renderHero($('#heroChart'), model);

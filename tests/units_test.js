@@ -10,6 +10,7 @@ import { applySettingsPatch, normaliseApiBase, apiOriginPattern, DEFAULT_SETTING
 import { applyImport, exportState, detectFormat } from '../src/background/datafmt.js';
 import { defaults } from '../src/background/store.js';
 import { platformForUrl, matchesPattern } from '../src/platforms/index.js';
+import { milestones } from '../src/ui/series.js';
 
 const T = (iso) => Date.parse(iso);
 const H = 3600;
@@ -154,6 +155,25 @@ Deno.test('settings validation', () => {
   assertEquals(normaliseApiBase(''), 'https://api.fazon.nexus');
   assertThrows(() => normaliseApiBase('http://example.com'), /https/);
   assertEquals(apiOriginPattern('http://127.0.0.1:8091'), 'http://127.0.0.1/*');
+});
+
+Deno.test('settings: milestones are whole hours, deduplicated and sorted; empty means defaults', () => {
+  assertEquals(DEFAULT_SETTINGS.milestonesH, [100, 250, 500, 1000, 1500, 2000, 3000, 5000, 10000]);
+  assertEquals(applySettingsPatch(DEFAULT_SETTINGS, { milestonesH: '500, 50 50;2000h' }).milestonesH, [50, 500, 2000]);
+  assertEquals(applySettingsPatch(DEFAULT_SETTINGS, { milestonesH: [300, 100] }).milestonesH, [100, 300]);
+  assertEquals(applySettingsPatch({ milestonesH: [7] }, { milestonesH: null }).milestonesH, DEFAULT_SETTINGS.milestonesH);
+  assertEquals(applySettingsPatch(DEFAULT_SETTINGS, { milestonesH: ' ' }).milestonesH, DEFAULT_SETTINGS.milestonesH);
+  assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { milestonesH: '100, 2.5' }), /whole hours/);
+  assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { milestonesH: '0' }), /whole hours/);
+  assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { milestonesH: 'abc' }), /whole hours/);
+  assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { milestonesH: [] }), /at least one/);
+  assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { milestonesH: Array.from({ length: 51 }, (_, i) => i + 1) }), /at most 50/);
+});
+
+Deno.test('series: milestones() uses the given list, else the defaults', () => {
+  assertEquals(milestones(120 * H, [50, 100, 200]), { passed: [50, 100], next: 200 });
+  assertEquals(milestones(120 * H), { passed: [100], next: 250 });
+  assertEquals(milestones(300 * H, [50, 100, 200]), { passed: [50, 100, 200], next: null });
 });
 
 // ---- import / export ----

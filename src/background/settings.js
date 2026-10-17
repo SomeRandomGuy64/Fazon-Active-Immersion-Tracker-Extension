@@ -1,6 +1,7 @@
 // Settings: defaults and validation. (Pure apart from Intl; imported by the store.)
 
 import { isValidTimeZone, parseResetTime } from '../shared/time.js';
+import { DEFAULT_MILESTONES_H, parseMilestones } from '../shared/milestones.js';
 
 export const DEFAULT_API_BASE = 'https://api.fazon.nexus';
 
@@ -10,6 +11,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   weekStart: 0,             // 0 = Sunday … 6 = Saturday (Sunday, like fazon.nexus Track weeks)
   countMuted: false,        // a muted video isn't listening, so it doesn't count by default
   dailyTargetMinutes: null, // manual daily target (used when there's no Track goal); null = none
+  milestonesH: DEFAULT_MILESTONES_H, // hour milestones on the dashboard hero, ascending
   apiKey: '',
   syncEnabled: false,
   summaryVideos: false,     // list watched videos in the Track week's summary (while syncing)
@@ -68,6 +70,9 @@ export function applySettingsPatch(current, patch) {
         next.dailyTargetMinutes = Math.round(n * 100) / 100;
         break;
       }
+      case 'milestonesH':
+        next.milestonesH = parseMilestones(v); // null / '' → defaults
+        break;
       case 'summaryMinPercent': {
         const n = Number(v);
         if (v === null || v === '' || !Number.isFinite(n) || n < 0 || n > 100) throw new Error('summaryMinPercent must be 0–100');

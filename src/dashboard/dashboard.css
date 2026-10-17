@@ -246,6 +246,7 @@ body { font-size: 16px; }
 .db-share span { display: block; height: 100%; background: var(--fz-accent); border-radius: 3px; }
 
 .db-num { width: 6.5em; flex: none; }
+.db-ms-input { flex: 0 1 24em; min-width: 0; }
 
 /* ---- settings ---- */
 .db-settings { max-width: 760px; width: 100%; margin-left: auto; margin-right: auto; }

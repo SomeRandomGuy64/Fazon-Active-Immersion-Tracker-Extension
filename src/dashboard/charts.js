@@ -50,7 +50,7 @@ const fix = (n) => Math.round(n * 10) / 10;
 // Hero: cumulative hours, milestone lines, dashed projection at the 30-day pace
 // =====================================================================================
 /**
- * model = { source: 'tracker'|'track', days: {key: s}, firstDay, todayKey, total, paceSec }:
+ * model = { source: 'tracker'|'track', days: {key: s}, firstDay, todayKey, total, paceSec, milestonesH }:
  * this tracker's own days, or fazon.nexus Track's weeks spread over their days (dashboard.js).
  */
 export function renderHero(box, model) {
@@ -62,7 +62,7 @@ function drawHero(box, W, m) {
     const H = W < 520 ? 200 : 250;
     const P = { l: W < 520 ? 44 : 52, r: W < 520 ? 14 : 22, t: 18, b: 26 };
     const total = m.total || 0;
-    const ms = milestones(total);
+    const ms = milestones(total, m.milestonesH);
     const svg = s('svg', { class: 'ch', width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: 'img' });
     const defs = s('defs', null, s('linearGradient', { id: 'heroFill', x1: 0, y1: 0, x2: 0, y2: 1 },
         s('stop', { offset: '0', style: 'stop-color: var(--fz-accent); stop-opacity: 0.32' }),
@@ -76,7 +76,7 @@ function drawHero(box, W, m) {
         svg.append(
             s('line', { class: 'ch-base', x1: P.l, x2: W - P.r, y1: P.t + ih, y2: P.t + ih }),
             s('line', { class: 'ch-ms next', x1: P.l, x2: W - P.r, y1: y, y2: y }),
-            s('text', { class: 'ch-ms-l next', x: P.l - 8, y: y + 4, 'text-anchor': 'end' }, '100 h'),
+            s('text', { class: 'ch-ms-l next', x: P.l - 8, y: y + 4, 'text-anchor': 'end' }, hLabel(ms.next)),
             s('text', { class: 'ch-empty', x: P.l + iw / 2, y: P.t + ih * 0.6, 'text-anchor': 'middle' }, 'Your line starts with the first Japanese video you play.'),
         );
         box.replaceChildren(svg);

@@ -3,6 +3,7 @@ import { send, originPattern } from '../ui/api.js';
 import { h, $, setText } from '../ui/dom.js';
 import { hm, ago, dateTime, dateOnly, maskKey, weekdayName } from '../ui/format.js';
 import { SYNC_DATA_COLLECTION, grantedDataCollection } from '../shared/consent.js';
+import { DEFAULT_MILESTONES_H, parseMilestones } from '../shared/milestones.js';
 
 const DEFAULT_BASE = 'https://api.fazon.nexus';
 let ctx = { refresh: async () => {}, showError: () => {}, getStats: () => null };
@@ -94,6 +95,8 @@ function fillForm() {
     const dt = $('#dailyTarget');
     if (document.activeElement !== dt) dt.value = settings.dailyTargetMinutes ? String(Math.round((settings.dailyTargetMinutes / 60) * 100) / 100) : '';
     renderTargetNote();
+    const ms = $('#milestones');
+    if (document.activeElement !== ms) ms.value = (settings.milestonesH || DEFAULT_MILESTONES_H).join(', ');
     $('#apiBase').value = settings.apiBase || DEFAULT_BASE;
     renderKey();
     $('#syncEnabled').checked = !!settings.syncEnabled;
@@ -119,6 +122,23 @@ function wireDays() {
         save({ dailyTargetMinutes: hrs == null ? null : Math.round(hrs * 60) }, '#savedTarget');
     });
     $('#dailyTargetClear').addEventListener('click', () => { $('#dailyTarget').value = ''; save({ dailyTargetMinutes: null }, '#savedTarget'); });
+}
+
+// ---------------- milestones ----------------
+function wireMilestones() {
+    const input = $('#milestones');
+    const saveList = async (list) => {
+        msg('#milestonesMsg', '');
+        if (await save({ milestonesH: list }, '#savedMilestones')) input.value = (settings.milestonesH || list).join(', ');
+    };
+    input.addEventListener('change', () => {
+        let list;
+        try { list = parseMilestones(input.value.trim() ? input.value : null); }
+        catch (e) { msg('#milestonesMsg', e.message.charAt(0).toUpperCase() + e.message.slice(1) + '.', 'bad'); return; }
+        saveList(list);
+    });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); });
+    $('#milestonesReset').addEventListener('click', () => saveList([...DEFAULT_MILESTONES_H]));
 }
 
 /** Which target is in effect right now (getStats.target), under the input. */
@@ -432,6 +452,7 @@ function wireData() {
 export function initSettings(c) {
     ctx = { ...ctx, ...c };
     wireDays();
+    wireMilestones();
     wireKey();
     wireSync();
     wireData();

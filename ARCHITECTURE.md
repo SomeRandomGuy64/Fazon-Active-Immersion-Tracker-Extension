@@ -321,6 +321,9 @@ Buffering / Checking language… / Not Japanese).
 
 ```js
 dailyTargetMinutes: number | null   // default null; Settings → "Daily target" (hours, step 0.25)
+milestonesH: number[]               // default [100, 250, 500, 1000, 1500, 2000, 3000, 5000, 10000];
+                                    // Settings → "Milestones"; whole hours 1–100,000, ≤ 50, sorted,
+                                    // deduplicated (shared/milestones.js); null / '' → the defaults
 ```
 
 ## Core v2 notes (implementation of "UI v2 data needs")

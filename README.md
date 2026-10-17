@@ -9,6 +9,8 @@ your fazon.nexus **Track** (Active immersion → `YouTube - Monday`, `YouTube - 
   (Mikan's rules). Override per video or per channel from the popup.
 - Day resets at **03:00 UTC** by default; change the time and time zone in Settings.
 - Monthly average = daily average × 30.44, so a partial first month isn't counted as a full one.
+- Hour milestones on the dashboard chart (100 h, 250 h, … 10,000 h by default) are yours to set in
+  Settings → Milestones.
 - Import your history from Mikan 見間 (Settings → Data). Imported history stays local.
 - Sync: paste a **Read & write** API key from your fazon.nexus profile (see
   [fazon.nexus/developers](https://fazon.nexus/developers/)). Missing sub-categories are created for
