@@ -21,6 +21,11 @@
           "version": "0.1.4",
           "update_link": "https://github.com/SomeRandomGuy64/Fazon-Active-Immersion-Tracker-Extension/releases/download/v0.1.4/fazon-active-immersion-tracker-firefox-0.1.4.xpi",
           "update_hash": "sha256:d475a30c1143319334b4df1c5c48f621bbc2391b35c7abb4080edbc562b74424"
+        },
+        {
+          "version": "0.1.5",
+          "update_link": "https://github.com/SomeRandomGuy64/Fazon-Active-Immersion-Tracker-Extension/releases/download/v0.1.5/fazon-active-immersion-tracker-firefox-0.1.5.xpi",
+          "update_hash": "sha256:cca652f3083650f8cc1ca3914ab7f770c0abedac675130ac319c7f2d9dc3ce7d"
         }
       ]
     }
