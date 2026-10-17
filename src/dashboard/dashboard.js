@@ -50,6 +50,22 @@ document.addEventListener('click', (e) => {
 window.addEventListener('popstate', applyView);
 window.addEventListener('hashchange', applyView);
 
+// ---------------- layout: standard (centred 960px column) | wide (window width, up to 21:9) ----------------
+// theme-boot.js has already set html.layout-wide from the localStorage value before first paint.
+function applyLayout(layout) {
+    document.documentElement.classList.toggle('layout-wide', layout === 'wide');
+    for (const x of $$('#layoutSeg button')) x.setAttribute('aria-pressed', String(x.dataset.layout === layout));
+}
+applyLayout(document.documentElement.classList.contains('layout-wide') ? 'wide' : 'standard');
+$('#layoutSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-layout]');
+    if (!b) return;
+    applyLayout(b.dataset.layout);
+    try { localStorage.setItem('fz-layout', b.dataset.layout); } catch { /* ignore */ }
+    hideTip();
+    if (stats && currentView() === 'overview') { chartSig = ''; renderOverview(stats); }
+});
+
 $('#chRange').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-r]');
     if (!b) return;

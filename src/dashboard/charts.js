@@ -40,6 +40,9 @@ export function responsive(box, draw) {
     if (w) draw(w);
 }
 
+/** Wide layout (dashboard.js): charts grow taller and show more history instead of fatter bars. */
+const isWide = () => document.documentElement.classList.contains('layout-wide');
+
 function niceStep(max, count) {
     const raw = Math.max(max, 1) / count, mag = 10 ** Math.floor(Math.log10(raw)), f = raw / mag;
     return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * mag;
@@ -59,7 +62,7 @@ export function renderHero(box, model) {
 
 function drawHero(box, W, m) {
     const st = m, paceSec = m.paceSec, isTrack = m.source === 'track';
-    const H = W < 520 ? 200 : 250;
+    const H = W < 520 ? 200 : isWide() ? Math.round(Math.min(400, Math.max(250, W * 0.27))) : 250;
     const P = { l: W < 520 ? 44 : 52, r: W < 520 ? 14 : 22, t: 18, b: 26 };
     const total = m.total || 0;
     const ms = milestones(total, m.milestonesH);
@@ -180,11 +183,12 @@ export function renderWeeks(box, st) {
 function drawWeeks(box, W, st) {
     const ws = Number(st.settings?.weekStart ?? 0);
     const days = st.days || {};
-    const H = W < 520 ? 190 : 220;
+    const wide = isWide();
+    const H = W < 520 ? 190 : wide ? Math.round(Math.min(340, Math.max(220, W * 0.3))) : 220;
     const P = { l: 40, r: 40, t: 16, b: 26 };
     const weeksOfData = st.firstDay ? Math.floor(daysBetween(st.firstDay, st.todayKey) / 7) + 1 : 1;
     const fit = Math.floor((W - P.l - P.r) / 26);
-    const n = Math.max(4, Math.min(16, fit, Math.max(8, weeksOfData)));
+    const n = Math.max(4, Math.min(wide ? 52 : 16, fit, Math.max(8, weeksOfData)));
     const all = weekBuckets(days, st.todayKey, ws, n + 3);   // 3 extra weeks feed the first trend points
     const wk = all.slice(3);
     // days that count towards an average: from the first tracked day, up to today
@@ -329,9 +333,12 @@ let heatT = [1, 2, 3, 4];
 
 function drawHeat(box, W, st) {
     const ws = Number(st.settings?.weekStart ?? 0);
-    const { first, weeks } = heatRange(st.firstDay, st.todayKey, ws, 12, 53);
     const LEFT = 28, TOP = 16;
-    const pitch = Math.max(11, Math.min(20, Math.floor((W - LEFT) / weeks)));
+    // wide: fill the row back towards a full year (GitHub-style), with slightly bigger cells
+    const maxPitch = isWide() ? 22 : 20;
+    const minWeeks = isWide() ? Math.max(12, Math.min(53, Math.floor((W - LEFT) / maxPitch))) : 12;
+    const { first, weeks } = heatRange(st.firstDay, st.todayKey, ws, minWeeks, 53);
+    const pitch = Math.max(11, Math.min(maxPitch, Math.floor((W - LEFT) / weeks)));
     const cell = pitch - 3;
     const days = st.days || {};
     const keys = [];
