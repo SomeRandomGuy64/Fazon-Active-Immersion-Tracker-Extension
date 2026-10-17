@@ -130,6 +130,11 @@ export async function handleMediaState(msg, sender) {
           st.videos[vk].t = title;
           dirty.add('videos');
         }
+        const dur = num(v.duration);
+        if (dur > 0 && dur < 1e6 && st.videos[vk] && st.videos[vk].d !== Math.round(dur)) {
+          st.videos[vk].d = Math.round(dur);
+          dirty.add('videos');
+        }
       }
       const r = claim(st.credit.claims, start, end, now);
       st.credit.claims = r.state;

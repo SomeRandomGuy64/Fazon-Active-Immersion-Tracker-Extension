@@ -27,6 +27,7 @@
       author: str(d.author),
       channelId: str(d.channelId),
       channelHandle: owner ? owner[1] : '',
+      lengthSeconds: Number(d.lengthSeconds) || 0, // 0 while a stream is live
       captionLanguages: Array.isArray(tracks) ? tracks.map((t) => str(t?.languageCode)).filter(Boolean) : null,
       playerId,
     };
@@ -44,7 +45,7 @@
         try {
           const v = typeof p.getVideoData === 'function' ? p.getVideoData() : null;
           if (v?.video_id) {
-            data = { videoId: str(v.video_id), title: str(v.title), author: str(v.author), channelId: '', channelHandle: '', captionLanguages: null, playerId: p.id };
+            data = { videoId: str(v.video_id), title: str(v.title), author: str(v.author), channelId: '', channelHandle: '', lengthSeconds: 0, captionLanguages: null, playerId: p.id };
           }
         } catch { /* ignore */ }
       }

@@ -266,9 +266,9 @@ async function sendPlan(settings, plan) {
 
 // ---- watched videos in the week's summary (shared/summary.js) ----
 
-let titleFetch = (...a) => fetch(...a);
-/** For tests: replace the fetch used for oEmbed title lookups. */
-export function configureSummaryFetch(f) { titleFetch = f; }
+let ytFetch = (...a) => fetch(...a);
+/** For tests: replace the fetch used for YouTube title / length lookups. */
+export function configureSummaryFetch(f) { ytFetch = f; }
 
 /**
  * Add the videos not listed yet to the summaries of the previous and current Track week: one
@@ -290,9 +290,38 @@ async function syncSummaries(settings) {
     return { dirty: ['summaryLog'] };
   });
   for (const week of weeks) {
-    const todo = unposted(st0.summaryLog, st0.videoDays, week, st0.settings);
+    const todo = await watchedEnough(unposted(st0.summaryLog, st0.videoDays, week, st0.settings), settings.summaryMinPercent);
     if (todo.length) await syncSummary(settings, week, todo);
   }
+}
+
+/**
+ * The videos watched for at least `pct` % of their length (seconds this week ÷ length). A length
+ * not known from the page is looked up once and stored (0 = unknowable, e.g. live: then only the
+ * one-minute rule applies). Videos below it stay unposted and are checked again next sync.
+ */
+async function watchedEnough(todo, pct) {
+  if (!(pct > 0)) return todo;
+  const out = [];
+  for (const v of todo) {
+    let d = (await read()).videos[v.vk]?.d;
+    if (d == null) {
+      const { platform, videoId } = splitVideoKey(v.vk);
+      const p = getPlatform(platform);
+      try {
+        d = p?.fetchDuration ? await p.fetchDuration(videoId, ytFetch) : 0;
+      } catch {
+        continue; // rate limited / offline: try again on a later sync
+      }
+      await update((s) => {
+        const rec = (s.videos[v.vk] ||= { ch: null });
+        if (rec.d == null) rec.d = d;
+        return { dirty: ['videos'] };
+      });
+    }
+    if (!(d > 0) || v.seconds >= (d * pct) / 100) out.push(v);
+  }
+  return out;
 }
 
 async function syncSummary(settings, week, todo) {
@@ -311,7 +340,7 @@ async function syncSummary(settings, week, todo) {
     let channel = st.channels[canonicalOf(st, v.ch)]?.name || '';
     if (!title && p.resolveChannel) {
       try {
-        const res = await p.resolveChannel(videoId, titleFetch);
+        const res = await p.resolveChannel(videoId, ytFetch);
         title = res?.title || '';
         channel ||= res?.name || '';
         if (title) {

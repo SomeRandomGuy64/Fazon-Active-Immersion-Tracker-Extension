@@ -1,7 +1,7 @@
 // Channels: which channel each video belongs to, alias merging, and per-channel totals. Pure.
 //
 // State (all keyed with the platform id so platforms never collide):
-//   videos:    { 'youtube:<videoId>': { ch: '<alias key>' | null, t?: title } }   ch null = channel unknown
+//   videos:    { 'youtube:<videoId>': { ch: '<alias key>' | null, t?: title, d?: length s } }   ch null = channel unknown
 //   channels:  { '<canonical key>': { platform, id, name, at } }
 //   aliases:   { '<alias key>': '<canonical key>' }   every known alias, the canonical one included
 //   videoDays: { 'YYYY-MM-DD': { 'youtube:<videoId>': seconds } }

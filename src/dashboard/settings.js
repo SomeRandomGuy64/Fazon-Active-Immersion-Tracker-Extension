@@ -98,6 +98,8 @@ function fillForm() {
     renderKey();
     $('#syncEnabled').checked = !!settings.syncEnabled;
     $('#summaryVideos').checked = !!settings.summaryVideos;
+    const mp = $('#summaryMinPercent');
+    if (document.activeElement !== mp) mp.value = String(settings.summaryMinPercent ?? 10);
     formFilled = true;
 }
 
@@ -142,6 +144,7 @@ function renderKey() {
     $('#syncEnabled').disabled = !has;
     $('#syncNow').disabled = !(has && settings.syncEnabled);
     $('#summaryVideos').disabled = !(has && settings.syncEnabled);
+    $('#summaryMinPercent').disabled = !(has && settings.syncEnabled);
 }
 
 function showTestResult(r) {
@@ -249,6 +252,11 @@ function wireSync() {
         const on = e.target.checked;
         if (await save({ summaryVideos: on })) msg('#syncMsg', on ? 'Adding this week’s videos to your summary…' : 'Video list off.', 'muted');
         else e.target.checked = !on;
+    });
+    $('#summaryMinPercent').addEventListener('change', (e) => {
+        const n = Number(e.target.value);
+        if (e.target.value.trim() === '' || !(n >= 0 && n <= 100)) { e.target.value = String(settings?.summaryMinPercent ?? 10); return; }
+        save({ summaryMinPercent: n }, '#savedSummary');
     });
     $('#syncNow').addEventListener('click', async () => {
         const btn = $('#syncNow');

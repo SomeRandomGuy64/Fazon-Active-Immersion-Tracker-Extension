@@ -364,8 +364,17 @@ Deno.test('background end to end (shim)', async (t) => {
       if (u.pathname === '/v1/api/track/weeks') return new Response(JSON.stringify({ weeks: [] }), { status: 200 });
       return new Response('{"error":"nope"}', { status: 404 });
     };
-    configureSummaryFetch(async (url) => {
-      const id = new URL(url).searchParams.get('url').split('v=')[1];
+    const LENGTH = { notitle0000: [1200, 0], latervideo0: [0, 3600] }; // [player endpoint, watch page]
+    const lookups = [];
+    configureSummaryFetch(async (url, opts = {}) => {
+      const u = new URL(url);
+      if (u.pathname === '/youtubei/v1/player' || u.pathname === '/watch') {
+        const id = u.pathname === '/watch' ? u.searchParams.get('v') : JSON.parse(opts.body).videoId;
+        lookups.push(`${u.pathname}:${id}`);
+        const n = (LENGTH[id] || [0, 0])[u.pathname === '/watch' ? 1 : 0];
+        return new Response(n ? `{"videoDetails":{"lengthSeconds":"${n}"}}` : '{}', { status: 200 });
+      }
+      const id = u.searchParams.get('url').split('v=')[1];
       return id === 'notitle0000'
         ? new Response(JSON.stringify({ title: 'oEmbed title', author_name: 'Hikaru', author_url: 'https://www.youtube.com/@hikaru' }), { status: 200 })
         : new Response('Not Found', { status: 404 });
@@ -381,10 +390,10 @@ Deno.test('background end to end (shim)', async (t) => {
       await send({
         type: 'mediaState', platform: 'youtube', media: media('titled00000'),
         segments: [{ start: now, end: now + 2_000, videoId: 'titled00000', muted: false }],
-        videos: { titled00000: { detected: true, channelId: 'UCxxxxxxxxxxxxxxxxxxxxxx', channelAliases: ['@c'], channel: 'Kaede ch', title: '【雑談】 [test] *bold*' } },
+        videos: { titled00000: { detected: true, channelId: 'UCxxxxxxxxxxxxxxxxxxxxxx', channelAliases: ['@c'], channel: 'Kaede ch', title: '【雑談】 [test] *bold*', duration: 600 } },
       }, { tab: { id: 12 }, frameId: 0, url: YT + 'titled00000' });
       await update((st) => {
-        assertEquals(st.videos['youtube:titled00000'].t, '【雑談】 [test] *bold*');
+        assertEquals([st.videos['youtube:titled00000'].t, st.videos['youtube:titled00000'].d], ['【雑談】 [test] *bold*', 600]);
         Object.assign((st.videoDays[today] ||= {}), { 'youtube:titled00000': 90, 'youtube:short000000': 30, 'youtube:notitle0000': 120 });
         return { dirty: ['videoDays'] };
       });
@@ -400,19 +409,34 @@ Deno.test('background end to end (shim)', async (t) => {
         `- [【雑談】 \\[test\\] \\*bold\\*](${YT}titled00000) — Kaede ch`,
       ].join('\n'));
       assertEquals(puts.length, 1);
+      // 92 s of 600 s and 120 s of 1200 s (looked up once) both reach the default 10 %.
+      assertEquals(lookups, ['/youtubei/v1/player:notitle0000']);
 
       // The user deletes a line and writes below the list; a new video goes under the list.
       summary = ['Good week.', '', HEADING, `- [oEmbed title](${YT}notitle0000) — Hikaru`, '', 'More later.'].join('\n'); // titled… deleted
+      // 75 s of a 1-hour video (length from the watch page) is under 10 %; an unknown length
+      // (e.g. still live) falls back to the one-minute rule.
       await update((st) => {
-        st.videoDays[today]['youtube:latervideo0'] = 75;
+        Object.assign(st.videoDays[today], { 'youtube:latervideo0': 75, 'youtube:livevideo00': 70 });
         return { dirty: ['videoDays'] };
       });
       await send({ type: 'syncNow' });
       assertEquals(summary, ['Good week.', '', HEADING, `- [oEmbed title](${YT}notitle0000) — Hikaru`,
-        `- [${YT}latervideo0](${YT}latervideo0)`, '', 'More later.'].join('\n'));
+        `- [${YT}livevideo00](${YT}livevideo00)`, '', 'More later.'].join('\n'));
+      // Watched on to 400 s (11 %): added next sync; lengths are never looked up twice.
+      await update((st) => {
+        st.videoDays[today]['youtube:latervideo0'] = 400;
+        return { dirty: ['videoDays'] };
+      });
+      await send({ type: 'syncNow' });
+      assert(summary.includes(`- [${YT}livevideo00](${YT}livevideo00)\n- [${YT}latervideo0](${YT}latervideo0)\n\nMore later.`), summary);
+      assertEquals(lookups.filter((l) => l.endsWith('latervideo0')), ['/youtubei/v1/player:latervideo0', '/watch:latervideo0']);
+      // A 0 % threshold (any length) is a valid setting; 101 isn't.
+      assert((await send({ type: 'setSettings', patch: { summaryMinPercent: 0 } })).ok);
+      assertEquals((await send({ type: 'setSettings', patch: { summaryMinPercent: 101 } })).ok, false);
       // Nothing new: no further writes (and no reads of the week for the summary).
       await send({ type: 'syncNow' });
-      assertEquals(puts.length, 2);
+      assertEquals(puts.length, 3);
       const s = await stats();
       assertEquals(s.sync.state, 'ok');
     } finally {

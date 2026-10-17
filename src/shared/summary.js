@@ -1,7 +1,8 @@
 // Watched videos in the Track week's summary. Pure.
 //
 // While sync and the `summaryVideos` setting are on, every video with at least MIN_SECONDS of
-// counted time in a Track week gets one Markdown line in that week's summary, under a
+// counted time in a Track week — and at least `summaryMinPercent` % of its length (sync.js, which
+// knows the lengths) — gets one Markdown line in that week's summary, under a
 // "**Videos watched**" list the extension starts at the end of the summary (or finds again, so
 // new lines go under the existing ones even after the user has written below it):
 //   - [<title>](<url>) — <channel>

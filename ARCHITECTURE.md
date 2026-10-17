@@ -86,12 +86,14 @@ The API sends no CORS headers: calls are made from the background with a host pe
   `https://api.fazon.nexus`, for local fazond testing).
 - Watched videos in the summary (`summaryVideos`, off by default; `src/shared/summary.js`): each
   sync run, videos with ≥ 1 min of counted time in the previous / current Track week (from the
-  per-day video data; a user day belongs to the Track week its start lies in) that aren't listed
-  yet get `- [title](url) — channel` under a `**Videos watched**` list in that week's summary
+  per-day video data; a user day belongs to the Track week its start lies in) and at least
+  `summaryMinPercent` % (default 10, 0 = off) of their length that aren't listed yet get `- [title](url) — channel` under a `**Videos watched**` list in that week's summary
   (`GET /weeks/{week}`, then `PUT /weeks/{week}/summary` without `private`, so the flag is kept).
   Each video is posted once per week (`summaryLog`); one already mentioned in the summary is only
   recorded. Turning it on starts at the current week (filled in from local data); another key or
-  base restarts it. Titles come from the page (`videos[vk].t`) or oEmbed; lines that don't fit the
+  base restarts it. Titles come from the page (`videos[vk].t`) or oEmbed;
+  lengths (`videos[vk].d`, s) from the player response's `lengthSeconds`, else looked up once via
+  `POST /youtubei/v1/player` or the watch page (0 = unknown, e.g. live → only the 1-min rule); lines that don't fit the
   10,000-character limit are dropped.
 - `https://api.fazon.nexus/*` is an **optional** host permission; the UI requests it (with
   `chrome.permissions.request`, called first thing inside the click handler) when a key is saved.

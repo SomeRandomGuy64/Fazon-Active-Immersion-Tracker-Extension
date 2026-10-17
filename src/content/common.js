@@ -8,7 +8,7 @@
 //   adapter.platform            'youtube'
 //   adapter.getMedia()          → null | {
 //       element,                the HTMLMediaElement (used to sanity-check long gaps)
-//       videoId, title, channel, channelId, channelAliases: [], url,
+//       videoId, title, channel, duration (s, 0 = unknown), channelId, channelAliases: [], url,
 //       paused, ended, buffering, ad, muted,   booleans
 //       detection,              null while undecided, else { japanese: bool, reason: string }
 //     }
@@ -81,6 +81,7 @@
       if (!m || !m.videoId) return null;
       return {
         videoId: m.videoId, title: m.title || '', channel: m.channel || '',
+        duration: m.duration > 0 ? m.duration : 0,
         channelId: m.channelId || null, channelAliases: m.channelAliases || [],
         url: m.url || location.href,
         playing: !m.paused && !m.ended && !m.buffering && !m.ad,
@@ -102,6 +103,7 @@
         v.channelId = snap.channelId || v.channelId || null;
         v.channel = snap.channel || v.channel || '';
         v.title = snap.title || v.title || '';
+        v.duration = snap.duration || v.duration || 0;
         v.channelAliases = [...new Set([...(v.channelAliases || []), ...snap.channelAliases])];
         if (m.detection) v.detection = m.detection;
         videos.set(snap.videoId, v);
@@ -144,6 +146,7 @@
           channelAliases: v.channelAliases || [],
           channel: v.channel || '',
           title: v.title || '',
+          duration: v.duration || 0,
         };
       }
       try {

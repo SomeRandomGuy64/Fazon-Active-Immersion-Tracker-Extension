@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   apiKey: '',
   syncEnabled: false,
   summaryVideos: false,     // list watched videos in the Track week's summary (while syncing)
+  summaryMinPercent: 10,    // …only those watched for at least this % of their length (0 = any)
   apiBase: DEFAULT_API_BASE,
 });
 
@@ -65,6 +66,12 @@ export function applySettingsPatch(current, patch) {
         const n = Number(v);
         if (!Number.isFinite(n) || n < 0 || n > 1440) throw new Error('dailyTargetMinutes must be 0–1440 minutes or null');
         next.dailyTargetMinutes = Math.round(n * 100) / 100;
+        break;
+      }
+      case 'summaryMinPercent': {
+        const n = Number(v);
+        if (v === null || v === '' || !Number.isFinite(n) || n < 0 || n > 100) throw new Error('summaryMinPercent must be 0–100');
+        next.summaryMinPercent = Math.round(n * 10) / 10;
         break;
       }
       case 'countMuted':

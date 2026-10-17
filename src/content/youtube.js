@@ -13,7 +13,7 @@
   const REQUEST = 'fait:yt-request';
   const DOM_FALLBACK_MS = 3000;
 
-  const playerData = new Map(); // videoId → {title, author, channelId, channelHandle, captionLanguages}
+  const playerData = new Map(); // videoId → {title, author, channelId, channelHandle, lengthSeconds, captionLanguages}
   let currentByPlayer = {};      // {movie_player: videoId, 'shorts-player': videoId}
   const firstSeen = new Map();   // videoId → ms
   const listeners = [];
@@ -34,6 +34,7 @@
         title: s(d.title), author: s(d.author, 200),
         channelId: /^UC[\w-]{22}$/.test(d.channelId) ? d.channelId : '',
         channelHandle: /^@[^/?#\s]{1,100}$/.test(d.channelHandle) ? d.channelHandle : '',
+        lengthSeconds: Number.isFinite(d.lengthSeconds) && d.lengthSeconds > 0 ? Math.round(d.lengthSeconds) : 0,
         captionLanguages: Array.isArray(d.captionLanguages) ? d.captionLanguages.map((l) => s(l, 20)).filter(Boolean) : null,
       });
       if (playerData.size > 100) playerData.delete(playerData.keys().next().value);
@@ -154,6 +155,7 @@
 
     return {
       element, videoId, title, channel,
+      duration: pd?.lengthSeconds || 0, // seconds; 0 = unknown (live, or player data not in yet)
       channelId: aliases[0] || null, channelAliases: aliases,
       url: fromUrl ? location.href : `https://www.youtube.com/watch?v=${videoId}`,
       paused: element.paused, ended: element.ended, buffering, ad,

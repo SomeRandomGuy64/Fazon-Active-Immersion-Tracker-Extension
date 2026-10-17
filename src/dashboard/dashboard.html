@@ -161,6 +161,12 @@
       </div>
       <label class="fz-check"><input type="checkbox" id="summaryVideos">
         <span>List watched videos in the week’s summary<span class="db-hint db-hint-inline">Each Japanese video you watch for at least a minute is added as a link under <b>Videos watched</b> in that Track week’s summary — starting with this week. Lines you delete on the site stay deleted. Public unless the week’s summary is private.</span></span></label>
+      <div class="db-row">
+        <label class="db-lbl" for="summaryMinPercent">Only videos watched for at least</label>
+        <input type="number" id="summaryMinPercent" class="fz-input db-num" min="0" max="100" step="1" inputmode="decimal">
+        <span>% of their length</span>
+        <span class="db-saved" id="savedSummary" aria-live="polite"></span>
+      </div>
       <dl class="db-dl" id="syncStatus"></dl>
     </div>
 
