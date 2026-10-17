@@ -39,7 +39,9 @@ scripts/build.sh            # → dist/chrome, dist/firefox (+ zips)
 gone after a restart).
 
 **Data:** nothing leaves your browser unless you turn on sync. Sync sends your tracked hours per
-day (`YouTube - Monday` …) with your API key to fazon.nexus; Firefox 140+ asks for this
+day (`YouTube - Monday` …) with your API key to fazon.nexus — plus, if you tick *List watched
+videos in the week's summary*, a link to each video you watched (title and channel) in that
+Track week's summary, which is public unless you made the week's summary private; Firefox 140+ asks for this
 ("browsing activity", "authentication information") when you save the key. To find channel names,
 the extension looks up video IDs on YouTube's public oEmbed endpoint (no cookies).
 

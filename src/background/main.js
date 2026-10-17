@@ -16,6 +16,7 @@ import {
 import { exportState, applyImport } from './datafmt.js';
 import { runResolver, resolveProgress, configureResolver, RESOLVE_ALARM } from './resolver.js';
 import { emptyChannelState } from '../shared/channels.js';
+import { trackWeekKey } from '../shared/time.js';
 
 // ---- statsChanged broadcast (coalesced) ----
 
@@ -73,19 +74,23 @@ async function getOverrides() {
 async function setSettings({ patch }) {
   let syncChanged = false;
   let keyChanged = false;
+  let summaryOn = false;
   const settings = await update((st) => {
     const next = applySettingsPatch(st.settings, patch);
     syncChanged = SYNC_KEYS.some((k) => next[k] !== st.settings[k]);
     keyChanged = next.apiKey !== st.settings.apiKey || next.apiBase !== st.settings.apiBase;
+    summaryOn = next.summaryVideos && !st.settings.summaryVideos;
+    // Turning the video list on starts it at the current Track week (filled in from local data).
+    if (summaryOn) st.summaryLog.from = trackWeekKey(Date.now());
     st.settings = next;
-    return { dirty: ['settings'], result: { ...next } };
+    return { dirty: summaryOn ? ['settings', 'summaryLog'] : ['settings'], result: { ...next } };
   });
   if (syncChanged) {
     await resetSyncConnection();
     if (settings.syncEnabled && settings.apiKey) runSync({ manual: true }).then(broadcast, () => {});
     // A key without sync: still read the Track total (a sync run does it otherwise).
     else if (keyChanged && settings.apiKey) refreshTrackTotal({ force: true }).then(broadcast, () => {});
-  }
+  } else if (summaryOn && settings.syncEnabled && settings.apiKey) runSync({ manual: true }).then(broadcast, () => {});
   await recomputeTabs();
   return { settings };
 }

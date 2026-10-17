@@ -78,6 +78,7 @@ async function doRun() {
           const { key } = registerChannel(s, platform, result.ids, result.name);
           if (key) {
             setVideoChannel(s, vk, key);
+            if (result.title && !s.videos[vk].t) s.videos[vk].t = result.title;
             r.done = (r.done || 0) + 1;
             delete r.attempts[vk];
           } else {

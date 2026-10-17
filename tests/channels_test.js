@@ -155,11 +155,11 @@ Deno.test('YouTube oEmbed resolver: parses handle, maps errors', async () => {
     status, ok: status >= 200 && status < 300, json: async () => body, headers: { get: (h) => headers[h] ?? null },
   });
   let seen = '';
-  const ok = await youtube.resolveChannel('HW-n71wysV0', (url) => { seen = url; return resp(200, { author_name: '樋口楓', author_url: 'https://www.youtube.com/@HiguchiKaede' }); });
-  assertEquals(ok, { name: '樋口楓', ids: ['@HiguchiKaede'] });
+  const ok = await youtube.resolveChannel('HW-n71wysV0', (url) => { seen = url; return resp(200, { title: ' 【雑談】 おはよう\n', author_name: '樋口楓', author_url: 'https://www.youtube.com/@HiguchiKaede' }); });
+  assertEquals(ok, { name: '樋口楓', ids: ['@HiguchiKaede'], title: '【雑談】 おはよう' });
   assert(seen.startsWith('https://www.youtube.com/oembed?format=json&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DHW-n71wysV0'));
-  assertEquals(await youtube.resolveChannel('HW-n71wysV0', () => resp(200, { author_name: 'A', author_url: 'https://www.youtube.com/channel/' + UC })), { name: 'A', ids: [UC] });
-  assertEquals(await youtube.resolveChannel('HW-n71wysV0', () => resp(200, { author_name: 'A', author_url: 'https://www.youtube.com/@%E6%A8%8B%E5%8F%A3' })), { name: 'A', ids: ['@%E6%A8%8B%E5%8F%A3'] });
+  assertEquals(await youtube.resolveChannel('HW-n71wysV0', () => resp(200, { author_name: 'A', author_url: 'https://www.youtube.com/channel/' + UC })), { name: 'A', ids: [UC], title: '' });
+  assertEquals(await youtube.resolveChannel('HW-n71wysV0', () => resp(200, { author_name: 'A', author_url: 'https://www.youtube.com/@%E6%A8%8B%E5%8F%A3' })), { name: 'A', ids: ['@%E6%A8%8B%E5%8F%A3'], title: '' });
   for (const st of [400, 401, 403, 404]) assertEquals(await youtube.resolveChannel('HW-n71wysV0', () => resp(st, {})), null);
   assertEquals(await youtube.resolveChannel('bad', () => resp(200, {})), null);
   let err = null;

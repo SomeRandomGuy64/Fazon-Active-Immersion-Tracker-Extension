@@ -3,7 +3,8 @@ import { assertEquals, assert } from './assert.js';
 import { installChrome } from './chrome_shim.js';
 import { trackWeekKey, dayKey, weekdayOf, WEEKDAYS } from '../src/shared/time.js';
 import { configureResolver, runResolver } from '../src/background/resolver.js';
-import { refreshTrackTotal, FIRST_WEEK } from '../src/background/sync.js';
+import { refreshTrackTotal, FIRST_WEEK, configureSummaryFetch } from '../src/background/sync.js';
+import { HEADING } from '../src/shared/summary.js';
 import { addDays } from '../src/shared/time.js';
 
 const env = installChrome({ granted: ['https://www.youtube.com/*', 'https://m.youtube.com/*', 'https://www.youtube-nocookie.com/*'] });
@@ -340,6 +341,83 @@ Deno.test('background end to end (shim)', async (t) => {
     } finally {
       globalThis.fetch = realFetch;
       await send({ type: 'setSettings', patch: { apiKey: '', apiBase: 'https://api.fazon.nexus', syncEnabled: false } });
+    }
+  });
+
+  await t.step('watched videos are added to the Track week summary once each', async () => {
+    const realFetch = globalThis.fetch;
+    const cur = trackWeekKey(Date.now());
+    const today = dayKey(Date.now(), {});
+    let summary = 'Good week.';
+    const puts = [];
+    globalThis.fetch = async (url, opts = {}) => {
+      const u = new URL(url);
+      const m = opts.method || 'GET';
+      if (u.pathname === '/v1/api/track/subcats') return new Response(JSON.stringify(m === 'GET' ? { subcats: [] } : {}), { status: m === 'GET' ? 200 : 201 });
+      if (u.pathname === `/v1/api/track/weeks/${cur}/hours`) return new Response('{}', { status: 200 });
+      if (u.pathname === `/v1/api/track/weeks/${cur}/summary` && m === 'PUT') {
+        summary = JSON.parse(opts.body).summary;
+        puts.push(summary);
+        return new Response('{}', { status: 200 });
+      }
+      if (u.pathname === `/v1/api/track/weeks/${cur}`) return new Response(JSON.stringify({ week: cur, summary, goals: { active: 10 } }), { status: 200 });
+      if (u.pathname === '/v1/api/track/weeks') return new Response(JSON.stringify({ weeks: [] }), { status: 200 });
+      return new Response('{"error":"nope"}', { status: 404 });
+    };
+    configureSummaryFetch(async (url) => {
+      const id = new URL(url).searchParams.get('url').split('v=')[1];
+      return id === 'notitle0000'
+        ? new Response(JSON.stringify({ title: 'oEmbed title', author_name: 'Hikaru', author_url: 'https://www.youtube.com/@hikaru' }), { status: 200 })
+        : new Response('Not Found', { status: 404 });
+    });
+    const { update } = await import('../src/background/store.js');
+    try {
+      assert((await send({ type: 'resetData' })).ok);
+      env.grant('http://127.0.0.1/*');
+      await send({ type: 'setSettings', patch: { apiKey: 'fz_sum', apiBase: 'http://127.0.0.1:9', syncEnabled: true } });
+      // A live heartbeat carries the page's title into the video record.
+      const now = Date.now();
+      tabs.set(12, { url: YT + 'titled00000' });
+      await send({
+        type: 'mediaState', platform: 'youtube', media: media('titled00000'),
+        segments: [{ start: now, end: now + 2_000, videoId: 'titled00000', muted: false }],
+        videos: { titled00000: { detected: true, channelId: 'UCxxxxxxxxxxxxxxxxxxxxxx', channelAliases: ['@c'], channel: 'Kaede ch', title: '【雑談】 [test] *bold*' } },
+      }, { tab: { id: 12 }, frameId: 0, url: YT + 'titled00000' });
+      await update((st) => {
+        assertEquals(st.videos['youtube:titled00000'].t, '【雑談】 [test] *bold*');
+        Object.assign((st.videoDays[today] ||= {}), { 'youtube:titled00000': 90, 'youtube:short000000': 30, 'youtube:notitle0000': 120 });
+        return { dirty: ['videoDays'] };
+      });
+      // Off by default: nothing is written.
+      await send({ type: 'syncNow' });
+      assertEquals(puts.length, 0);
+
+      assert((await send({ type: 'setSettings', patch: { summaryVideos: true } })).ok);
+      await send({ type: 'syncNow' });
+      assertEquals(summary, [
+        'Good week.', '', HEADING,
+        `- [oEmbed title](${YT}notitle0000) — Hikaru`, // same day: most watched first
+        `- [【雑談】 \\[test\\] \\*bold\\*](${YT}titled00000) — Kaede ch`,
+      ].join('\n'));
+      assertEquals(puts.length, 1);
+
+      // The user deletes a line and writes below the list; a new video goes under the list.
+      summary = ['Good week.', '', HEADING, `- [oEmbed title](${YT}notitle0000) — Hikaru`, '', 'More later.'].join('\n'); // titled… deleted
+      await update((st) => {
+        st.videoDays[today]['youtube:latervideo0'] = 75;
+        return { dirty: ['videoDays'] };
+      });
+      await send({ type: 'syncNow' });
+      assertEquals(summary, ['Good week.', '', HEADING, `- [oEmbed title](${YT}notitle0000) — Hikaru`,
+        `- [${YT}latervideo0](${YT}latervideo0)`, '', 'More later.'].join('\n'));
+      // Nothing new: no further writes (and no reads of the week for the summary).
+      await send({ type: 'syncNow' });
+      assertEquals(puts.length, 2);
+      const s = await stats();
+      assertEquals(s.sync.state, 'ok');
+    } finally {
+      globalThis.fetch = realFetch;
+      await send({ type: 'setSettings', patch: { apiKey: '', apiBase: 'https://api.fazon.nexus', syncEnabled: false, summaryVideos: false } });
     }
   });
 });

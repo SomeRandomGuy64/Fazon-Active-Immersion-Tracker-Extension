@@ -124,6 +124,12 @@ export async function handleMediaState(msg, sender) {
           dirty.add('videos').add('resolve');
           queued = true;
         }
+        // …and its title (for the Track summary's video list).
+        const title = typeof v.title === 'string' ? v.title.replace(/\s+/g, ' ').trim().slice(0, 300) : '';
+        if (title && st.videos[vk] && st.videos[vk].t !== title) {
+          st.videos[vk].t = title;
+          dirty.add('videos');
+        }
       }
       const r = claim(st.credit.claims, start, end, now);
       st.credit.claims = r.state;

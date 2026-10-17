@@ -12,6 +12,9 @@ import { update, read, emptySyncState } from './store.js';
 import { apiOriginPattern } from './settings.js';
 import { hasSyncDataConsent } from '../shared/consent.js';
 import { syncActive } from './tracker.js';
+import { summaryWeeks, unposted, videoLine, appendVideoLines } from '../shared/summary.js';
+import { canonicalOf, splitVideoKey } from '../shared/channels.js';
+import { getPlatform } from '../platforms/index.js';
 
 const TIMEOUT_MS = 20_000;
 const BACKOFF_BASE_MS = 30_000;
@@ -154,6 +157,7 @@ async function doSync(manual) {
       await ensureSubcats(settings, planSubcats(plans), false);
       for (const plan of plans) await sendPlan(settings, plan);
     }
+    if (settings.summaryVideos) await syncSummaries(settings);
     await update((st) => {
       pruneLedger(st.ledger, Date.now());
       Object.assign(st.syncState, {
@@ -258,6 +262,80 @@ async function sendPlan(settings, plan) {
     }
     throw new HttpError(r.status, `week ${plan.week}: ${errText(r)}`, r.retryAfter);
   }
+}
+
+// ---- watched videos in the week's summary (shared/summary.js) ----
+
+let titleFetch = (...a) => fetch(...a);
+/** For tests: replace the fetch used for oEmbed title lookups. */
+export function configureSummaryFetch(f) { titleFetch = f; }
+
+/**
+ * Add the videos not listed yet to the summaries of the previous and current Track week: one
+ * GET + PUT per week, and only when there is something new (so a quiet sync costs nothing).
+ */
+async function syncSummaries(settings) {
+  const fp = fingerprint(settings.apiKey);
+  await update((st) => {
+    const log = st.summaryLog;
+    if (log.base === settings.apiBase && log.key === fp && log.from) return {};
+    // First run, or another account: start at the current week, nothing posted there yet.
+    st.summaryLog = { from: log.from && log.base == null ? log.from : trackWeekKey(Date.now()), base: settings.apiBase, key: fp, weeks: {} };
+    return { dirty: ['summaryLog'] };
+  });
+  const st0 = await read();
+  const weeks = summaryWeeks(st0.summaryLog, Date.now());
+  await update((st) => {
+    for (const w of Object.keys(st.summaryLog.weeks)) if (!weeks.includes(w)) delete st.summaryLog.weeks[w];
+    return { dirty: ['summaryLog'] };
+  });
+  for (const week of weeks) {
+    const todo = unposted(st0.summaryLog, st0.videoDays, week, st0.settings);
+    if (todo.length) await syncSummary(settings, week, todo);
+  }
+}
+
+async function syncSummary(settings, week, todo) {
+  const r = check(await api(settings, 'GET', `/weeks/${week}`), [200]);
+  const current = typeof r.body?.summary === 'string' ? r.body.summary : '';
+  const st = await read();
+  const lines = [];
+  const listed = [];  // already in the summary (written by hand, another browser…): just record
+  const retry = new Set();
+  for (const { vk } of todo) {
+    const { platform: pid, videoId } = splitVideoKey(vk);
+    const p = getPlatform(pid);
+    if (!p || current.includes(videoId)) { listed.push(vk); continue; }
+    const v = st.videos[vk] || {};
+    let title = v.t || '';
+    let channel = st.channels[canonicalOf(st, v.ch)]?.name || '';
+    if (!title && p.resolveChannel) {
+      try {
+        const res = await p.resolveChannel(videoId, titleFetch);
+        title = res?.title || '';
+        channel ||= res?.name || '';
+        if (title) {
+          await update((s) => {
+            (s.videos[vk] ||= { ch: null }).t = title;
+            return { dirty: ['videos'] };
+          });
+        }
+      } catch {
+        retry.add(vk); // rate limited / offline: try again on a later sync
+        continue;
+      }
+    }
+    lines.push({ vk, line: videoLine({ title, channel, url: p.mediaUrl(videoId) }) });
+  }
+  const { summary, added } = appendVideoLines(current, lines.map((l) => l.line));
+  if (added) check(await api(settings, 'PUT', `/weeks/${week}/summary`, { summary }), [200]);
+  // Lines that didn't fit under the 10,000-character limit are recorded too: they never will.
+  const done = [...listed, ...lines.map((l) => l.vk)].filter((vk) => !retry.has(vk));
+  await update((s) => {
+    const w = (s.summaryLog.weeks[week] ||= []);
+    for (const vk of done) if (!w.includes(vk)) w.push(vk);
+    return { dirty: ['summaryLog'] };
+  });
 }
 
 // ---- the Track goal (for getStats.target) ----

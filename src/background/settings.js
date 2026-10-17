@@ -12,6 +12,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   dailyTargetMinutes: null, // manual daily target (used when there's no Track goal); null = none
   apiKey: '',
   syncEnabled: false,
+  summaryVideos: false,     // list watched videos in the Track week's summary (while syncing)
   apiBase: DEFAULT_API_BASE,
 });
 
@@ -68,6 +69,7 @@ export function applySettingsPatch(current, patch) {
       }
       case 'countMuted':
       case 'syncEnabled':
+      case 'summaryVideos':
         next[k] = !!v;
         break;
       case 'apiKey':

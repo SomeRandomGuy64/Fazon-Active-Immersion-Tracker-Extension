@@ -97,6 +97,7 @@ function fillForm() {
     $('#apiBase').value = settings.apiBase || DEFAULT_BASE;
     renderKey();
     $('#syncEnabled').checked = !!settings.syncEnabled;
+    $('#summaryVideos').checked = !!settings.summaryVideos;
     formFilled = true;
 }
 
@@ -140,6 +141,7 @@ function renderKey() {
     setText($('#keyMask'), has ? maskKey(settings.apiKey) : '');
     $('#syncEnabled').disabled = !has;
     $('#syncNow').disabled = !(has && settings.syncEnabled);
+    $('#summaryVideos').disabled = !(has && settings.syncEnabled);
 }
 
 function showTestResult(r) {
@@ -242,6 +244,11 @@ function wireSync() {
             msg('#syncMsg', on ? 'Sync on.' : 'Sync off.', 'muted');
             if (on) { try { const r = await send('syncNow'); renderSyncStatus({ ...(ctx.getStats() || {}), sync: r.sync, now: Date.now() }); } catch { /* status line shows it */ } }
         } else box.checked = !on;
+    });
+    $('#summaryVideos').addEventListener('change', async (e) => {
+        const on = e.target.checked;
+        if (await save({ summaryVideos: on })) msg('#syncMsg', on ? 'Adding this week’s videos to your summary…' : 'Video list off.', 'muted');
+        else e.target.checked = !on;
     });
     $('#syncNow').addEventListener('click', async () => {
         const btn = $('#syncNow');

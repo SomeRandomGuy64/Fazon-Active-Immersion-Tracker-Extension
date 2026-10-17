@@ -101,6 +101,7 @@
         const v = videos.get(snap.videoId) || {};
         v.channelId = snap.channelId || v.channelId || null;
         v.channel = snap.channel || v.channel || '';
+        v.title = snap.title || v.title || '';
         v.channelAliases = [...new Set([...(v.channelAliases || []), ...snap.channelAliases])];
         if (m.detection) v.detection = m.detection;
         videos.set(snap.videoId, v);
@@ -142,6 +143,7 @@
           channelId: v.channelId || null,
           channelAliases: v.channelAliases || [],
           channel: v.channel || '',
+          title: v.title || '',
         };
       }
       try {

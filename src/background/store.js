@@ -19,6 +19,7 @@
 //   trackGoal  { week, hours, at, base, key } | null   (the current Track week's active goal)
 //   trackTotal { base, key, state, hundredths, fetchedAt, triedAt, error } | null  (all-time Track active)
 //   imports    { mikan: { 'YYYY-MM-DD': { total, videos: {videoId: s} } } }  (re-import guard)
+//   summaryLog videos already listed in Track week summaries, see shared/summary.js
 //
 // Schema 1 → 2: adds the per-video / channel keys empty; older time has no video data and shows
 // as the "unknown channel" row. Mikan import records that are plain numbers stay valid.
@@ -28,10 +29,11 @@
 import { DEFAULT_SETTINGS } from './settings.js';
 import { emptyCreditState } from '../shared/credit.js';
 import { emptyChannelState } from '../shared/channels.js';
+import { emptySummaryLog } from '../shared/summary.js';
 
 export const SCHEMA = 2;
 export const KEYS = ['schema', 'settings', 'days', 'overrides', 'credit', 'ledger', 'syncState', 'imports',
-  'videos', 'channels', 'aliases', 'resolve', 'trackGoal', 'trackTotal'];
+  'videos', 'channels', 'aliases', 'resolve', 'trackGoal', 'trackTotal', 'summaryLog'];
 const VD_PREFIX = 'vd:';
 
 export const emptySyncState = () => ({
@@ -52,6 +54,7 @@ export function defaults() {
     trackGoal: null,
     trackTotal: null,
     imports: {},
+    summaryLog: emptySummaryLog(),
     ...emptyChannelState(),
   };
 }
@@ -68,6 +71,8 @@ export function migrate(raw) {
   st.syncState = { ...d.syncState, ...(raw.syncState || {}) };
   st.resolve = { ...d.resolve, ...(raw.resolve || {}) };
   st.resolve.attempts ||= {};
+  st.summaryLog = { ...d.summaryLog, ...(raw.summaryLog || {}) };
+  st.summaryLog.weeks ||= {};
   for (const k of ['videos', 'channels', 'aliases', 'imports', 'days', 'overrides', 'ledger']) st[k] ||= {};
   st.videoDays = {};
   for (const [k, v] of Object.entries(raw)) {

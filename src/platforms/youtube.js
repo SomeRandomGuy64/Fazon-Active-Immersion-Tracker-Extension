@@ -23,7 +23,7 @@ export default {
 
   /**
    * Find a video's channel without a page: YouTube's public oEmbed endpoint (covered by the
-   * www.youtube.com host permission; it also answers CORS). Resolves { name, ids: ['@handle'] },
+   * www.youtube.com host permission; it also answers CORS). Resolves { name, ids: ['@handle'], title },
    * or null when the video can't be resolved (deleted, private, not embeddable, bad id). Throws
    * TransientError for rate limits / server or network trouble (retry later).
    */
@@ -47,6 +47,7 @@ export default {
     const m = /youtube\.com\/(@[^/?#]+|channel\/(UC[\w-]{22})|(?:c|user)\/[^/?#]+)/.exec(u);
     if (m) ids.push(m[2] || (m[1].startsWith('@') ? m[1] : `/${m[1]}`));
     else if (name) ids.push(`name:${name}`);
-    return ids.length ? { name, ids } : null;
+    const title = typeof j?.title === 'string' ? j.title.replace(/\s+/g, ' ').trim().slice(0, 300) : '';
+    return ids.length ? { name, ids, title } : null;
   },
 };
