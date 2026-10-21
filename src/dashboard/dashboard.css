@@ -148,12 +148,11 @@ body { font-size: 16px; }
 .db-goals-edit { margin-left: auto; }
 .db-goals { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px 28px; }
 .db-goal { min-width: 0; }
-.db-goal-h { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; }
+.db-goal-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .db-goal-v { font-size: 1.15em; color: var(--fz-accent-ink); }
 .db-goal.missed .db-goal-v { color: var(--fz-muted); }
-.db-goal-by { font-size: 0.82em; }
-.db-goal-name { font-size: 0.78em; color: var(--fz-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-.db-goal-h .db-pace { margin-left: auto; font-size: 0.7em; align-self: center; }
+.db-goal-by { font-size: 0.8em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.db-goal-h .db-pace { font-size: 0.7em; flex: none; }
 .db-goal .fz-bar { margin: 6px 0 4px; }
 .db-goal .fz-bar.met > span { background: var(--fz-heat-5); }
 .db-goal-s { margin: 2px 0 0; font-size: 0.75em; color: var(--fz-muted); }

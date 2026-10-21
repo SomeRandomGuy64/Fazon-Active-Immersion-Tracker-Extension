@@ -222,7 +222,9 @@ function renderGoals(st, model) {
     const sig = [JSON.stringify(goals), st.todayKey, model.source, Math.floor(model.total / 60), Math.round(model.paceSec / 36)].join('|');
     if (!goals.length || card.dataset.sig === sig) return;
     card.dataset.sig = sig;
-    setText($('#goalsSrc'), model.source === 'track' ? 'fazon.nexus Track hours' : '');
+    // the pace every projection below uses, said once here instead of on each goal
+    setText($('#goalsSrc'), `${model.source === 'track' ? 'fazon.nexus Track hours · ' : ''}your pace ${hDec(model.paceSec)}/day`);
+    $('#goalsSrc').title = `Projections use your ${model.basis} (${hDec(model.paceSec)}/day).`;
     const series = cumulative(model.days, model.firstDay, model.todayKey);
     const days = (n) => plural(Math.abs(n), 'day');
     const vsDate = (n) => (n > 0 ? `${days(n)} early` : n < 0 ? `${days(n)} late` : 'on the day');
@@ -236,23 +238,20 @@ function renderGoals(st, model) {
         } else if (r.state === 'missed') {
             pill = h('span', { class: 'db-pace bad' }, 'date passed');
             lines = [`${Math.floor(r.pct)}% by ${shortDay(g.by)} · ${hm(r.left)} to go`,
-                r.projected ? `At your ${model.basis}: ~${longDay(r.projected)}` : null];
+                r.projected ? `At your pace: ~${longDay(r.projected)}` : null];
         } else {
             const onTrack = r.early != null && r.early >= 0;
             pill = h('span', { class: 'db-pace' + (onTrack ? ' ok' : ' warn') }, onTrack ? 'on track' : 'behind');
             lines = [
-                `${hm(model.total)} of ${hLabel(g.h)} · ${hm(r.left)} to go · ${plural(r.daysLeft, 'day')} left`,
-                h('span', null, 'Needs ', h('b', null, `${hDec(r.needSec)}/day`), ` (${hDec(r.needSec * 7)}/week) · you’re at ${hDec(model.paceSec)}/day`),
-                r.projected ? `At your ${model.basis}: ~${longDay(r.projected)} — ${vsDate(r.early)}`
-                    : `No recent time, so no projection — ${hDec(r.needSec)}/day from today gets you there.`,
+                `${hm(model.total)} of ${hLabel(g.h)} · ${hm(r.left)} to go`,
+                h('span', null, `${plural(r.daysLeft, 'day')} left · needs `, h('b', null, `${hDec(r.needSec)}/day`), ` (${hDec(r.needSec * 7)}/wk)`),
+                r.projected ? `At your pace: ~${longDay(r.projected)} — ${vsDate(r.early)}` : 'No recent time, so no projection yet.',
             ];
         }
         return h('li', { class: 'db-goal' + (r.state === 'active' ? '' : ' ' + r.state) },
-            h('div', { class: 'db-goal-h' },
-                h('b', { class: 'db-goal-v' }, hLabel(g.h)),
-                h('span', { class: 'db-goal-by' }, `by ${longDay(g.by)}`),
-                g.label ? h('span', { class: 'db-goal-name' }, g.label) : null,
-                pill),
+            h('div', { class: 'db-goal-h' }, h('b', { class: 'db-goal-v' }, hLabel(g.h)), pill),
+            h('div', { class: 'db-goal-by', title: g.label ? `${g.label} — by ${longDay(g.by)}` : null },
+                `by ${longDay(g.by)}`, g.label ? h('span', { class: 'fz-muted' }, ` · ${g.label}`) : null),
             h('div', { class: 'fz-bar' + (r.state === 'reached' ? ' met' : ''), title: `${hm(model.total)} of ${hLabel(g.h)} (${Math.floor(r.pct)}%)` }, fill),
             ...lines.filter(Boolean).map((l) => h('p', { class: 'db-goal-s' }, l)));
     }));
