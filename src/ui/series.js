@@ -46,6 +46,28 @@ export function projectDate(totalSec, paceSec, targetH, todayKey) {
     return n > 365 * 30 ? null : addDays(todayKey, n);
 }
 
+/**
+ * Where a goal {h, by} stands for an all-time `total` (s) on `todayKey`, at `paceSec`/day, over the
+ * cumulative `series` (for the day it was reached). `by` is inclusive: today counts as a day left.
+ * { state: 'reached'|'active'|'missed', pct, left (s), reachedOn, daysLeft, needSec (s/day),
+ *   projected (key|null), early (days; < 0 = late, null if no projection) }
+ */
+export function goalStatus(goal, total, paceSec, todayKey, series = []) {
+    const target = goal.h * 3600;
+    const pct = Math.min(100, (total / target) * 100);
+    const left = Math.max(0, target - total);
+    if (left <= 0) {
+        const hit = series.find((p) => p.total >= target);
+        const reachedOn = hit ? hit.key : todayKey;
+        return { state: 'reached', pct, left, reachedOn, early: daysBetween(reachedOn, goal.by), daysLeft: 0, needSec: 0, projected: reachedOn };
+    }
+    const projected = projectDate(total, paceSec, goal.h, todayKey);
+    const early = projected ? daysBetween(projected, goal.by) : null;
+    if (goal.by < todayKey) return { state: 'missed', pct, left, reachedOn: null, early, daysLeft: 0, needSec: null, projected };
+    const daysLeft = daysBetween(todayKey, goal.by) + 1;
+    return { state: 'active', pct, left, reachedOn: null, early, daysLeft, needSec: left / daysLeft, projected };
+}
+
 /** Current streak (days in a row with time, ending today — or yesterday if today is still 0) and the longest. */
 export function streaks(days, todayKey) {
     const keys = Object.keys(days).filter((k) => days[k] > 0).sort();

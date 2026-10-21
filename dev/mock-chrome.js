@@ -14,6 +14,7 @@
 //   track=ok|loading|error|stale|off   getStats.track: all-time Track active total + weeks (stale = error
 //                      with a cached value; default ok when a
 //                      key is set — i.e. not empty=1 — else off)
+//   goals=0            no goals (default: three — one reached, one on track, one behind)
 //   theme=light|dark   (handled by the loader)
 (function () {
     const q = new URLSearchParams((window.__fzPreviewSearch || location.search));
@@ -67,6 +68,9 @@
         apiKey: EMPTY || SYNC === 'off' ? '' : 'fz_ab12' + 'x'.repeat(39) + 'Q9z',
         syncEnabled: !EMPTY && SYNC !== 'off',
         apiBase: 'https://api.fazon.nexus',
+        goals: EMPTY || q.get('goals') === '0' ? [] : [
+            { h: 300, by: '2026-10-01', label: 'Summer block' }, { h: 800, by: '2026-10-25' }, { h: 1000, by: '2027-01-31', label: 'Before JLPT N3' },
+        ],
     };
     const sync = {
         state: settings.syncEnabled ? SYNC : 'off',

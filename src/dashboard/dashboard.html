@@ -64,6 +64,15 @@
 
   <section class="db-strip" id="strip" aria-label="At a glance"></section>
 
+  <section class="fz-card" id="goalsCard" aria-labelledby="hGoals" hidden>
+    <div class="db-card-h">
+      <h2 id="hGoals">Goals</h2>
+      <span class="db-card-sub" id="goalsSrc"></span>
+      <a class="db-card-sub db-goals-edit" href="#settings" data-nav="settings" data-scroll="secGoals">Edit</a>
+    </div>
+    <ul class="db-goals" id="goals"></ul>
+  </section>
+
   <section class="fz-card" aria-labelledby="hWeeks">
     <div class="db-card-h">
       <h2 id="hWeeks">Week by week</h2>
@@ -134,6 +143,19 @@
       <button type="button" class="fz-linkbtn fz-small" id="milestonesReset">Defaults</button>
     </div>
     <p class="db-hint" id="milestonesHint">Whole hours separated by commas, e.g. <code>100, 250, 500, 1000</code> — drawn as lines on the dashboard chart, with the next one as your goal and projection. Order doesn’t matter. <span class="db-msg" id="milestonesMsg" aria-live="polite"></span></p>
+  </section>
+
+  <section class="fz-card" id="secGoals" aria-labelledby="hGoals2">
+    <div class="db-card-h"><h2 id="hGoals2">Goals</h2><span class="db-saved" id="savedGoals" aria-live="polite"></span></div>
+    <ul class="db-goal-list" id="goalList"></ul>
+    <div class="db-row db-goal-add">
+      <input type="number" id="goalHours" class="fz-input db-num" min="1" max="100000" step="1" inputmode="numeric" placeholder="500" aria-label="Goal in hours">
+      <span class="fz-muted fz-small">hours by</span>
+      <input type="date" id="goalBy" class="fz-input db-date" aria-label="Goal date">
+      <input type="text" id="goalLabel" class="fz-input db-goal-label" maxlength="40" spellcheck="false" autocomplete="off" placeholder="Name (optional)" aria-label="Goal name (optional)">
+      <button type="button" class="fz-btn" id="goalAdd">Add goal</button>
+    </div>
+    <p class="db-hint">An all-time total to reach by a date — like a milestone with a deadline. The dashboard shows how many hours a day you need from now on, and whether your current pace gets you there in time. <span class="db-msg" id="goalsMsg" aria-live="polite"></span></p>
   </section>
 
   <section class="fz-card" id="secTracking" aria-labelledby="hTracking">

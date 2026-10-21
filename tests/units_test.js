@@ -10,7 +10,7 @@ import { applySettingsPatch, normaliseApiBase, apiOriginPattern, DEFAULT_SETTING
 import { applyImport, exportState, detectFormat } from '../src/background/datafmt.js';
 import { defaults } from '../src/background/store.js';
 import { platformForUrl, matchesPattern } from '../src/platforms/index.js';
-import { milestones } from '../src/ui/series.js';
+import { milestones, goalStatus, cumulative } from '../src/ui/series.js';
 
 const T = (iso) => Date.parse(iso);
 const H = 3600;
@@ -174,6 +174,40 @@ Deno.test('series: milestones() uses the given list, else the defaults', () => {
   assertEquals(milestones(120 * H, [50, 100, 200]), { passed: [50, 100], next: 200 });
   assertEquals(milestones(120 * H), { passed: [100], next: 250 });
   assertEquals(milestones(300 * H, [50, 100, 200]), { passed: [50, 100, 200], next: null });
+});
+
+Deno.test('settings: goals are {h, by, label?}, validated, deduplicated and sorted by date; null means none', () => {
+  assertEquals(DEFAULT_SETTINGS.goals, []);
+  const goals = applySettingsPatch(DEFAULT_SETTINGS, { goals: [
+    { h: '1000h', by: '2027-06-30', label: '  end of   June ' }, { h: 500, by: '2027-03-31' }, { h: 400, by: '2027-03-31' }, { h: 500, by: '2027-03-31', label: 'again' },
+  ] }).goals;
+  assertEquals(goals, [{ h: 400, by: '2027-03-31' }, { h: 500, by: '2027-03-31', label: 'again' }, { h: 1000, by: '2027-06-30', label: 'end of June' }]);
+  assertEquals(applySettingsPatch({ goals }, { goals: null }).goals, []);
+  assertEquals(applySettingsPatch(DEFAULT_SETTINGS, { goals: [{ h: 50, by: '2020-01-01' }] }).goals, [{ h: 50, by: '2020-01-01' }]); // past dates kept
+  assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { goals: [{ h: 2.5, by: '2027-01-01' }] }), /whole hours/);
+  assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { goals: [{ h: 100, by: '2027-02-30' }] }), /date/);
+  assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { goals: [{ h: 100 }] }), /date/);
+  assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { goals: [{ h: 100, by: '2027-01-01', label: 'x'.repeat(41) }] }), /at most 40/);
+  assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { goals: '100' }), /list/);
+  assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { goals: Array.from({ length: 21 }, (_, i) => ({ h: i + 1, by: '2027-01-01' })) }), /at most 20/);
+});
+
+Deno.test('series: goalStatus() — needed pace, projection early/late, reached and missed', () => {
+  // 100 h done on 1 Jan, 200 h by 10 Jan: 10 days left incl. today → 10 h/day needed
+  let r = goalStatus({ h: 200, by: '2027-01-10' }, 100 * H, 12 * H, '2027-01-01');
+  assertEquals([r.state, r.daysLeft, r.needSec, r.left, r.pct], ['active', 10, 10 * H, 100 * H, 50]);
+  assertEquals([r.projected, r.early], ['2027-01-10', 0]);            // ceil(100/12) = 9 days → on the day
+  r = goalStatus({ h: 200, by: '2027-01-10' }, 100 * H, 5 * H, '2027-01-01');
+  assertEquals([r.projected, r.early], ['2027-01-21', -11]);           // 11 days late
+  r = goalStatus({ h: 200, by: '2027-01-10' }, 100 * H, 0, '2027-01-01');
+  assertEquals([r.projected, r.early], [null, null]);
+  r = goalStatus({ h: 200, by: '2027-01-01' }, 100 * H, 5 * H, '2027-01-01');
+  assertEquals([r.state, r.daysLeft, r.needSec], ['active', 1, 100 * H]); // the date itself still counts
+  r = goalStatus({ h: 200, by: '2026-12-31' }, 100 * H, 5 * H, '2027-01-01');
+  assertEquals(r.state, 'missed');
+  const series = cumulative({ '2026-12-20': 150 * H, '2026-12-28': 60 * H }, '2026-12-20', '2027-01-01');
+  r = goalStatus({ h: 200, by: '2026-12-31' }, 210 * H, 5 * H, '2027-01-01', series);
+  assertEquals([r.state, r.reachedOn, r.early, r.pct], ['reached', '2026-12-28', 3, 100]);
 });
 
 // ---- import / export ----

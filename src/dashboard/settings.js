@@ -1,9 +1,10 @@
 // Settings view (#settings): day/week, tracking, fazon.nexus sync, overrides, data.
 import { send, originPattern } from '../ui/api.js';
 import { h, $, setText } from '../ui/dom.js';
-import { hm, ago, dateTime, dateOnly, maskKey, weekdayName } from '../ui/format.js';
+import { hm, ago, dateTime, dateOnly, maskKey, weekdayName, longDay, hLabel } from '../ui/format.js';
 import { SYNC_DATA_COLLECTION, grantedDataCollection } from '../shared/consent.js';
 import { DEFAULT_MILESTONES_H, parseMilestones } from '../shared/milestones.js';
+import { parseGoal, parseGoals } from '../shared/goals.js';
 
 const DEFAULT_BASE = 'https://api.fazon.nexus';
 let ctx = { refresh: async () => {}, showError: () => {}, getStats: () => null };
@@ -16,6 +17,8 @@ function msg(el, text, kind = '') {
     el.className = 'db-msg' + (kind ? ' ' + kind : '');
     setText(el, text || '');
 }
+/** An Error message as a sentence: 'add at least one' → 'Add at least one.' */
+const capital = (m) => m.charAt(0).toUpperCase() + m.slice(1) + '.';
 function flashSaved(id) {
     const el = $(id);
     setText(el, 'Saved ✓');
@@ -97,6 +100,7 @@ function fillForm() {
     renderTargetNote();
     const ms = $('#milestones');
     if (document.activeElement !== ms) ms.value = (settings.milestonesH || DEFAULT_MILESTONES_H).join(', ');
+    renderGoalList();
     $('#apiBase').value = settings.apiBase || DEFAULT_BASE;
     renderKey();
     $('#syncEnabled').checked = !!settings.syncEnabled;
@@ -134,11 +138,52 @@ function wireMilestones() {
     input.addEventListener('change', () => {
         let list;
         try { list = parseMilestones(input.value.trim() ? input.value : null); }
-        catch (e) { msg('#milestonesMsg', e.message.charAt(0).toUpperCase() + e.message.slice(1) + '.', 'bad'); return; }
+        catch (e) { msg('#milestonesMsg', capital(e.message), 'bad'); return; }
         saveList(list);
     });
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); });
     $('#milestonesReset').addEventListener('click', () => saveList([...DEFAULT_MILESTONES_H]));
+}
+
+// ---------------- goals ----------------
+function renderGoalList() {
+    const goals = (settings && settings.goals) || [];
+    const st = ctx.getStats();
+    if (st && st.todayKey) $('#goalBy').min = st.todayKey;
+    $('#goalList').replaceChildren(...goals.map((g, i) => h('li', null,
+        h('span', null, h('b', null, hLabel(g.h)), ' by ', h('b', null, longDay(g.by)), g.label ? h('span', { class: 'fz-muted' }, ` · ${g.label}`) : null),
+        h('button', { type: 'button', class: 'fz-linkbtn fz-small', 'data-goal': String(i), 'aria-label': `Remove ${hLabel(g.h)} by ${longDay(g.by)}` }, 'Remove'))));
+    $('#goalList').hidden = !goals.length;
+}
+async function saveGoals(list) {
+    msg('#goalsMsg', '');
+    let goals;
+    try { goals = parseGoals(list); } catch (e) { msg('#goalsMsg', capital(e.message), 'bad'); return false; }
+    const ok = await save({ goals }, '#savedGoals');
+    if (ok) renderGoalList();
+    return ok;
+}
+function wireGoals() {
+    $('#goalAdd').addEventListener('click', async () => {
+        let g;
+        try { g = parseGoal({ h: $('#goalHours').value, by: $('#goalBy').value, label: $('#goalLabel').value }); }
+        catch (e) { msg('#goalsMsg', capital(e.message), 'bad'); return; }
+        const st = ctx.getStats();
+        if (st && st.todayKey && g.by < st.todayKey) { msg('#goalsMsg', 'Pick a date from today on.', 'bad'); return; }
+        if (await saveGoals([...((settings && settings.goals) || []), g])) {
+            $('#goalHours').value = ''; $('#goalBy').value = ''; $('#goalLabel').value = '';
+        }
+    });
+    for (const id of ['#goalHours', '#goalLabel']) {
+        $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#goalAdd').click(); });
+    }
+    $('#goalList').addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-goal]');
+        if (!b) return;
+        const goals = [...((settings && settings.goals) || [])];
+        goals.splice(Number(b.dataset.goal), 1);
+        saveGoals(goals);
+    });
 }
 
 /** Which target is in effect right now (getStats.target), under the input. */
@@ -453,6 +498,7 @@ export function initSettings(c) {
     ctx = { ...ctx, ...c };
     wireDays();
     wireMilestones();
+    wireGoals();
     wireKey();
     wireSync();
     wireData();

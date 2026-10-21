@@ -53,8 +53,9 @@ const fix = (n) => Math.round(n * 10) / 10;
 // Hero: cumulative hours, milestone lines, dashed projection at the 30-day pace
 // =====================================================================================
 /**
- * model = { source: 'tracker'|'track', days: {key: s}, firstDay, todayKey, total, paceSec, milestonesH }:
- * this tracker's own days, or fazon.nexus Track's weeks spread over their days (dashboard.js).
+ * model = { source: 'tracker'|'track', days: {key: s}, firstDay, todayKey, total, paceSec, milestonesH,
+ * goals: [{h, by, behind}] (the ones still ahead) }: this tracker's own days, or fazon.nexus Track's
+ * weeks spread over their days (dashboard.js).
  */
 export function renderHero(box, model) {
     responsive(box, (W) => drawHero(box, W, model));
@@ -90,10 +91,12 @@ function drawHero(box, W, m) {
     const proj = ms.next != null ? projectDate(total, paceSec, ms.next, st.todayKey) : null;
     const span = series.length;
     const cap = addDays(st.todayKey, Math.max(21, Math.round(span * 0.6)));
-    const endKey = proj ? (proj < cap ? proj : cap) : addDays(st.todayKey, Math.max(3, Math.round(span * 0.04)));
+    let endKey = proj ? (proj < cap ? proj : cap) : addDays(st.todayKey, Math.max(3, Math.round(span * 0.04)));
+    const goals = m.goals || [];
+    for (const g of goals) if (g.by > endKey) endKey = g.by;   // a goal's date is always on the chart
     const x0 = keyToMs(st.firstDay), x1 = keyToMs(endKey);
     const X = (key) => P.l + ((keyToMs(key) - x0) / Math.max(1, x1 - x0)) * iw;
-    const topH = Math.max(ms.next || 0, total / 3600) * 1.06;
+    const topH = Math.max(ms.next || 0, total / 3600, ...goals.map((g) => g.h)) * 1.06;
     const Y = (sec) => P.t + ih - (sec / 3600 / topH) * ih;
 
     // month ticks along the bottom
@@ -146,6 +149,15 @@ function drawHero(box, W, m) {
             svg.append(s('circle', { class: 'ch-proj-dot', cx: px, cy: py, r: 4 }),
                 s('text', { class: 'ch-proj-l', x: px - 6, y: py - 8, 'text-anchor': 'end' }, `~${shortDay(proj)}`));
         }
+    }
+    // goals: the target point, and the straight line from today that reaching it on time needs
+    for (const g of goals) {
+        const gx = X(g.by), gy = Y(g.h * 3600), cls = g.behind ? ' behind' : '';
+        svg.append(s('line', { class: 'ch-goal' + cls, x1: X(lastPt.key), y1: Y(lastPt.total), x2: gx, y2: gy }),
+            s('path', { class: 'ch-goal-dot' + cls, d: `M${fix(gx)},${fix(gy - 5.5)}l5.5,5.5l-5.5,5.5l-5.5,-5.5Z` }),
+            // above the marker, unless that's where the next milestone's projection label goes
+            s('text', { class: 'ch-goal-l' + cls, x: gx - 9, y: ms.next != null && Math.abs(gy - Y(ms.next * 3600)) < 18 ? gy + 17 : gy - 8, 'text-anchor': 'end' },
+                `${hLabel(g.h)} by ${shortDay(g.by)}`));
     }
     svg.append(s('circle', { class: 'ch-now', cx: X(lastPt.key), cy: Y(lastPt.total), r: 4.5 }));
 

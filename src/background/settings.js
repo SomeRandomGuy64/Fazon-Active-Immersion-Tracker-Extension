@@ -2,6 +2,7 @@
 
 import { isValidTimeZone, parseResetTime } from '../shared/time.js';
 import { DEFAULT_MILESTONES_H, parseMilestones } from '../shared/milestones.js';
+import { parseGoals } from '../shared/goals.js';
 
 export const DEFAULT_API_BASE = 'https://api.fazon.nexus';
 
@@ -12,6 +13,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   countMuted: false,        // a muted video isn't listening, so it doesn't count by default
   dailyTargetMinutes: null, // manual daily target (used when there's no Track goal); null = none
   milestonesH: DEFAULT_MILESTONES_H, // hour milestones on the dashboard hero, ascending
+  goals: [],                // [{h, by: 'YYYY-MM-DD', label?}]: all-time hours to reach by a day, by date
   apiKey: '',
   syncEnabled: false,
   summaryVideos: false,     // list watched videos in the Track week's summary (while syncing)
@@ -72,6 +74,9 @@ export function applySettingsPatch(current, patch) {
       }
       case 'milestonesH':
         next.milestonesH = parseMilestones(v); // null / '' → defaults
+        break;
+      case 'goals':
+        next.goals = parseGoals(v); // null → none
         break;
       case 'summaryMinPercent': {
         const n = Number(v);

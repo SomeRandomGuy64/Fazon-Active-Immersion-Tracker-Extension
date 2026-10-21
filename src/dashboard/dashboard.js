@@ -4,7 +4,7 @@ import { initTheme } from '../ui/theme.js';
 import { send, onStatsChanged } from '../ui/api.js';
 import { h, $, $$, setText } from '../ui/dom.js';
 import { hm, hDec, hLabel, longDay, shortDay, monthName, daysBetween, plural, ago } from '../ui/format.js';
-import { pace, milestones, projectDate, streaks, trackDays, trackPace, trackWeekProgress, trackWeekWindow } from '../ui/series.js';
+import { cumulative, pace, milestones, projectDate, goalStatus, streaks, trackDays, trackPace, trackWeekProgress, trackWeekWindow } from '../ui/series.js';
 import { renderHero, renderWeeks, renderChannels, renderRhythm, renderPlatforms, setTooltipElement, hideTip } from './charts.js';
 import { initSettings, onSettingsShown, updateSettingsFromStats } from './settings.js';
 
@@ -145,6 +145,13 @@ const hasTrack = (st) => {
  */
 function heroModel(st) {
     const milestonesH = st.settings && st.settings.milestonesH;
+    const m = heroSource(st, milestonesH);
+    // goals still ahead go on the chart as a target point, with the pace they need from today
+    m.goals = ((st.settings && st.settings.goals) || []).map((g) => ({ ...g, s: goalStatus(g, m.total, m.paceSec, st.todayKey) }))
+        .filter((g) => g.s.state === 'active').map((g) => ({ h: g.h, by: g.by, behind: !(g.s.early >= 0) }));
+    return m;
+}
+function heroSource(st, milestonesH) {
     if (hasTrack(st)) {
         const t = st.track;
         const pend = t.pendingSeconds || 0;
@@ -204,6 +211,50 @@ function renderHeroHead(st, model) {
         daysBetween(st.todayKey, when) > 0 ? h('span', { class: 'fz-muted' }, ` · in ${plural(daysBetween(st.todayKey, when), 'day')}`) : null);
 }
 
+/** The Goals card: each goal against the hero's total (Track's when available) and pace. */
+function renderGoals(st, model) {
+    const goals = (st.settings && st.settings.goals) || [];
+    const card = $('#goalsCard');
+    card.hidden = !goals.length;
+    const sig = [JSON.stringify(goals), st.todayKey, model.source, Math.floor(model.total / 60), Math.round(model.paceSec / 36)].join('|');
+    if (!goals.length || card.dataset.sig === sig) return;
+    card.dataset.sig = sig;
+    setText($('#goalsSrc'), model.source === 'track' ? 'fazon.nexus Track hours' : '');
+    const series = cumulative(model.days, model.firstDay, model.todayKey);
+    const days = (n) => plural(Math.abs(n), 'day');
+    const vsDate = (n) => (n > 0 ? `${days(n)} early` : n < 0 ? `${days(n)} late` : 'on the day');
+    $('#goals').replaceChildren(...goals.map((g) => {
+        const r = goalStatus(g, model.total, model.paceSec, model.todayKey, series);
+        const fill = h('span'); fill.style.width = r.pct.toFixed(1) + '%';
+        let pill, lines;
+        if (r.state === 'reached') {
+            pill = h('span', { class: 'db-pace ok' }, '✓ reached');
+            lines = [`Reached ${longDay(r.reachedOn)} — ${vsDate(r.early)}`];
+        } else if (r.state === 'missed') {
+            pill = h('span', { class: 'db-pace bad' }, 'date passed');
+            lines = [`${Math.floor(r.pct)}% by ${shortDay(g.by)} · ${hm(r.left)} to go`,
+                r.projected ? `At your ${model.basis}: ~${longDay(r.projected)}` : null];
+        } else {
+            const onTrack = r.early != null && r.early >= 0;
+            pill = h('span', { class: 'db-pace' + (onTrack ? ' ok' : ' warn') }, onTrack ? 'on track' : 'behind');
+            lines = [
+                `${hm(model.total)} of ${hLabel(g.h)} · ${hm(r.left)} to go · ${plural(r.daysLeft, 'day')} left`,
+                h('span', null, 'Needs ', h('b', null, `${hDec(r.needSec)}/day`), ` (${hDec(r.needSec * 7)}/week) · you’re at ${hDec(model.paceSec)}/day`),
+                r.projected ? `At your ${model.basis}: ~${longDay(r.projected)} — ${vsDate(r.early)}`
+                    : `No recent time, so no projection — ${hDec(r.needSec)}/day from today gets you there.`,
+            ];
+        }
+        return h('li', { class: 'db-goal' + (r.state === 'active' ? '' : ' ' + r.state) },
+            h('div', { class: 'db-goal-h' },
+                h('b', { class: 'db-goal-v' }, hLabel(g.h)),
+                h('span', { class: 'db-goal-by' }, `by ${longDay(g.by)}`),
+                g.label ? h('span', { class: 'db-goal-name' }, g.label) : null,
+                pill),
+            h('div', { class: 'fz-bar' + (r.state === 'reached' ? ' met' : ''), title: `${hm(model.total)} of ${hLabel(g.h)} (${Math.floor(r.pct)}%)` }, fill),
+            ...lines.filter(Boolean).map((l) => h('p', { class: 'db-goal-s' }, l)));
+    }));
+}
+
 function stat(label, value, sub, extra) {
     return h('div', { class: 'db-stat', title: extra && extra.title }, h('span', { class: 'db-stat-l' }, label, extra && extra.info), h('b', { class: 'db-stat-v' }, value), extra && extra.bar, sub ? h('span', { class: 'db-stat-s' }, sub) : null, extra && extra.foot);
 }
@@ -258,10 +309,11 @@ function renderOverview(st) {
     const model = heroModel(st);
     renderHeroHead(st, model);
     renderStrip(st);
+    renderGoals(st, model);
     renderResolve(st);
     // charts change at most once a minute while something plays
     const sig = [st.todayKey, st.settings?.weekStart, Math.floor(st.allTime / 60), st.target?.weekly, (st.channels || []).length, Object.keys(st.byPlatform || {}).length,
-        model.source, Math.floor(model.total / 60), st.track?.weeks?.length || 0, String(model.milestonesH || '')].join('|');
+        model.source, Math.floor(model.total / 60), st.track?.weeks?.length || 0, String(model.milestonesH || ''), JSON.stringify(model.goals)].join('|');
     if (sig === chartSig) return;
     chartSig = sig;
     renderHero($('#heroChart'), model);

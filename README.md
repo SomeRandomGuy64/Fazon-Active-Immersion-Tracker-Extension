@@ -11,6 +11,8 @@ your fazon.nexus **Track** (Active immersion → `YouTube - Monday`, `YouTube - 
 - Monthly average = daily average × 30.44, so a partial first month isn't counted as a full one.
 - Hour milestones on the dashboard chart (100 h, 250 h, … 10,000 h by default) are yours to set in
   Settings → Milestones.
+- Goals: an hour total to reach by a date (Settings → Goals). The dashboard shows how many hours a
+  day each one needs from now on, and whether your current pace gets you there in time.
 - Import your history from Mikan 見間 (Settings → Data). Imported history stays local.
 - Sync: paste a **Read & write** API key from your fazon.nexus profile (see
   [fazon.nexus/developers](https://fazon.nexus/developers/)). Missing sub-categories are created for
