@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Fazon Active Immersion Tracker",
   "short_name": "Immersion Tracker",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Counts the time you spend watching Japanese videos on YouTube, and can log it to your fazon.nexus Track.",
   "minimum_chrome_version": "111",
   "icons": {
