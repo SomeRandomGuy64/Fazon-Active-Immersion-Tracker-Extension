@@ -189,6 +189,10 @@ Deno.test('settings: goals are {h, by, label?}, validated, deduplicated and sort
   assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { goals: [{ h: 100 }] }), /date/);
   assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { goals: [{ h: 100, by: '2027-01-01', label: 'x'.repeat(41) }] }), /at most 40/);
   assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { goals: '100' }), /list/);
+  assertEquals(DEFAULT_SETTINGS.goalsOnChart, null);
+  assertEquals(applySettingsPatch(DEFAULT_SETTINGS, { goalsOnChart: '1' }).goalsOnChart, 1);
+  assertEquals(applySettingsPatch({ goalsOnChart: 1 }, { goalsOnChart: 'all' }).goalsOnChart, null);
+  assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { goalsOnChart: 1.5 }), /goalsOnChart/);
   assertThrows(() => applySettingsPatch(DEFAULT_SETTINGS, { goals: Array.from({ length: 21 }, (_, i) => ({ h: i + 1, by: '2027-01-01' })) }), /at most 20/);
 });
 

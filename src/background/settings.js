@@ -2,7 +2,7 @@
 
 import { isValidTimeZone, parseResetTime } from '../shared/time.js';
 import { DEFAULT_MILESTONES_H, parseMilestones } from '../shared/milestones.js';
-import { parseGoals } from '../shared/goals.js';
+import { parseGoals, MAX_GOALS } from '../shared/goals.js';
 
 export const DEFAULT_API_BASE = 'https://api.fazon.nexus';
 
@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   dailyTargetMinutes: null, // manual daily target (used when there's no Track goal); null = none
   milestonesH: DEFAULT_MILESTONES_H, // hour milestones on the dashboard hero, ascending
   goals: [],                // [{h, by: 'YYYY-MM-DD', label?}]: all-time hours to reach by a day, by date
+  goalsOnChart: null,       // how many of the goals still ahead (soonest first) the hero chart draws; null = all
   apiKey: '',
   syncEnabled: false,
   summaryVideos: false,     // list watched videos in the Track week's summary (while syncing)
@@ -78,6 +79,13 @@ export function applySettingsPatch(current, patch) {
       case 'goals':
         next.goals = parseGoals(v); // null → none
         break;
+      case 'goalsOnChart': {
+        if (v === null || v === '' || v === 'all') { next.goalsOnChart = null; break; }
+        const n = Number(v);
+        if (!Number.isInteger(n) || n < 0 || n > MAX_GOALS) throw new Error(`goalsOnChart must be 0–${MAX_GOALS} or null (all)`);
+        next.goalsOnChart = n;
+        break;
+      }
       case 'summaryMinPercent': {
         const n = Number(v);
         if (v === null || v === '' || !Number.isFinite(n) || n < 0 || n > 100) throw new Error('summaryMinPercent must be 0–100');

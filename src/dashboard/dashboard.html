@@ -155,7 +155,19 @@
       <input type="text" id="goalLabel" class="fz-input db-goal-label" maxlength="40" spellcheck="false" autocomplete="off" placeholder="Name (optional)" aria-label="Goal name (optional)">
       <button type="button" class="fz-btn" id="goalAdd">Add goal</button>
     </div>
-    <p class="db-hint">An all-time total to reach by a date — like a milestone with a deadline. The dashboard shows how many hours a day you need from now on, and whether your current pace gets you there in time. <span class="db-msg" id="goalsMsg" aria-live="polite"></span></p>
+    <div class="db-row">
+      <label class="db-lbl" for="goalsOnChart">On the dashboard chart, show</label>
+      <select id="goalsOnChart" class="fz-select db-narrow">
+        <option value="all">all goals</option>
+        <option value="0">no goals</option>
+        <option value="1">the next goal</option>
+        <option value="2">the next 2 goals</option>
+        <option value="3">the next 3 goals</option>
+        <option value="4">the next 4 goals</option>
+        <option value="5">the next 5 goals</option>
+      </select>
+    </div>
+    <p class="db-hint">An all-time total to reach by a date — like a milestone with a deadline. The dashboard shows how many hours a day you need from now on, and whether your current pace gets you there in time. The Goals card always lists every goal; the chart can show just the soonest ones still ahead. <span class="db-msg" id="goalsMsg" aria-live="polite"></span></p>
   </section>
 
   <section class="fz-card" id="secTracking" aria-labelledby="hTracking">

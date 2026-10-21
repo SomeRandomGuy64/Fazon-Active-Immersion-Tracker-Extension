@@ -150,6 +150,8 @@ function renderGoalList() {
     const goals = (settings && settings.goals) || [];
     const st = ctx.getStats();
     if (st && st.todayKey) $('#goalBy').min = st.todayKey;
+    const oc = $('#goalsOnChart'), n = settings && settings.goalsOnChart;
+    if (document.activeElement !== oc) oc.value = n == null ? 'all' : n > 5 ? 'all' : String(n);
     $('#goalList').replaceChildren(...goals.map((g, i) => h('li', null,
         h('span', null, h('b', null, hLabel(g.h)), ' by ', h('b', null, longDay(g.by)), g.label ? h('span', { class: 'fz-muted' }, ` · ${g.label}`) : null),
         h('button', { type: 'button', class: 'fz-linkbtn fz-small', 'data-goal': String(i), 'aria-label': `Remove ${hLabel(g.h)} by ${longDay(g.by)}` }, 'Remove'))));
@@ -177,6 +179,7 @@ function wireGoals() {
     for (const id of ['#goalHours', '#goalLabel']) {
         $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#goalAdd').click(); });
     }
+    $('#goalsOnChart').addEventListener('change', (e) => save({ goalsOnChart: e.target.value === 'all' ? null : Number(e.target.value) }, '#savedGoals'));
     $('#goalList').addEventListener('click', (e) => {
         const b = e.target.closest('button[data-goal]');
         if (!b) return;

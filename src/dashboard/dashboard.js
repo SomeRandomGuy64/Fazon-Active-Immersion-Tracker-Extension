@@ -146,9 +146,12 @@ const hasTrack = (st) => {
 function heroModel(st) {
     const milestonesH = st.settings && st.settings.milestonesH;
     const m = heroSource(st, milestonesH);
-    // goals still ahead go on the chart as a target point, with the pace they need from today
+    // goals still ahead go on the chart as a target point, with the pace they need from today —
+    // the soonest `goalsOnChart` of them (null = all; goals are stored by date)
+    const n = st.settings && st.settings.goalsOnChart;
     m.goals = ((st.settings && st.settings.goals) || []).map((g) => ({ ...g, s: goalStatus(g, m.total, m.paceSec, st.todayKey) }))
-        .filter((g) => g.s.state === 'active').map((g) => ({ h: g.h, by: g.by, behind: !(g.s.early >= 0) }));
+        .filter((g) => g.s.state === 'active').slice(0, n == null ? undefined : n)
+        .map((g) => ({ h: g.h, by: g.by, behind: !(g.s.early >= 0) }));
     return m;
 }
 function heroSource(st, milestonesH) {
