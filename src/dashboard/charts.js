@@ -140,10 +140,12 @@ function drawHero(box, W, m) {
         s('path', { class: 'ch-line', d }),
     );
 
-    // projection to the next milestone (clipped at the right edge if it's far)
+    // projection to the next milestone (clipped at the right edge if it's far). It ends on its own
+    // date, not endKey: a later goal stretches the chart past it
     if (proj && paceSec > 0) {
-        const endSec = Math.min(ms.next * 3600, total + paceSec * daysBetween(st.todayKey, endKey));
-        const px = X(endKey), py = Y(endSec);
+        const projEnd = proj < endKey ? proj : endKey;
+        const endSec = Math.min(ms.next * 3600, total + paceSec * daysBetween(st.todayKey, projEnd));
+        const px = X(projEnd), py = Y(endSec);
         svg.append(s('line', { class: 'ch-proj', x1: X(lastPt.key), y1: Y(lastPt.total), x2: px, y2: py }));
         if (proj <= endKey) {
             svg.append(s('circle', { class: 'ch-proj-dot', cx: px, cy: py, r: 4 }),
