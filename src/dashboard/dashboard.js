@@ -31,7 +31,8 @@ function applyView() {
         if (a.dataset.nav === v) a.setAttribute('aria-current', 'page');
         else a.removeAttribute('aria-current');
     }
-    document.title = v === 'settings' ? 'Settings · Active Immersion Tracker' : 'Active Immersion Tracker';
+    document.title = v === 'settings' ? 'Settings · Active Immersion Tracker' : 'Overview · Active Immersion Tracker';
+    setText($('#wBarTitle'), v === 'settings' ? 'Settings' : 'Overview');
     hideTip();
     if (v === 'settings') onSettingsShown();
     else if (stats) { chartSig = ''; renderOverview(stats); }
@@ -50,30 +51,93 @@ document.addEventListener('click', (e) => {
 window.addEventListener('popstate', applyView);
 window.addEventListener('hashchange', applyView);
 
-// ---------------- layout: standard (centred 960px column) | wide (window width, up to 21:9) ----------------
-// theme-boot.js has already set html.layout-wide from the localStorage value before first paint.
-function applyLayout(layout) {
-    document.documentElement.classList.toggle('layout-wide', layout === 'wide');
-    for (const x of $$('#layoutSeg button')) x.setAttribute('aria-pressed', String(x.dataset.layout === layout));
+// ---------------- layout: standard (centred 960px column) | wide (desktop shell, wide.css) ----------------
+// Wide is a desktop layout, as on fazon.nexus: html.layout-wide only goes on in a landscape window of
+// 1200px or more, whatever is saved. theme-boot.js has already applied it before first paint.
+const desktop = matchMedia('(min-width: 1200px) and (min-aspect-ratio: 1001/1000)');
+let savedLayout = 'standard';
+try { savedLayout = localStorage.getItem('fz-layout') === 'wide' ? 'wide' : 'standard'; } catch { /* ignore */ }
+const wideOn = () => document.documentElement.classList.contains('layout-wide');
+function applyLayout() {
+    const was = wideOn();
+    document.documentElement.classList.toggle('layout-wide', savedLayout === 'wide' && desktop.matches);
+    // a pane that scrolls on its own must be reachable by keyboard so the arrow keys can scroll it
+    for (const p of $$('#paneCharts, #paneInsp > .db-col, #paneForm')) {
+        if (wideOn()) p.setAttribute('tabindex', '0'); else p.removeAttribute('tabindex');
+    }
+    for (const x of $$('#layoutSeg button')) x.setAttribute('aria-pressed', String(x.dataset.layout === savedLayout));
+    if (was !== wideOn()) {
+        hideTip();
+        if (stats && currentView() === 'overview') { chartSig = ''; renderOverview(stats); }
+    }
 }
-applyLayout(document.documentElement.classList.contains('layout-wide') ? 'wide' : 'standard');
+applyLayout();
+desktop.addEventListener('change', applyLayout);
 $('#layoutSeg').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-layout]');
     if (!b) return;
-    applyLayout(b.dataset.layout);
-    try { localStorage.setItem('fz-layout', b.dataset.layout); } catch { /* ignore */ }
-    hideTip();
-    if (stats && currentView() === 'overview') { chartSig = ''; renderOverview(stats); }
+    savedLayout = b.dataset.layout;
+    try { localStorage.setItem('fz-layout', savedLayout); } catch { /* ignore */ }
+    applyLayout();
 });
 
-$('#chRange').addEventListener('click', (e) => {
-    const b = e.target.closest('button[data-r]');
-    if (!b) return;
-    chRange = b.dataset.r;
+// ---------------- shortcuts (wide only), listed on the ? sheet ----------------
+// As on fazon.nexus: ignored while typing; single-character keys can be turned off on the sheet
+// (WCAG 2.1.4), and Ctrl+/ opens the sheet either way.
+const KEYS = {
+    1: ['Channels: this week', () => setRange('week')],
+    2: ['Channels: this month', () => setRange('month')],
+    3: ['Channels: all time', () => setRange('allTime')],
+};
+const GO = { o: ['overview', 'Overview'], s: ['settings', 'Settings'] };
+let charKeysOff = false, gPending = null;
+try { charKeysOff = localStorage.getItem('fz-keys') === 'off'; } catch { /* ignore */ }
+const typing = (n) => !!n && !!n.closest && !!n.closest('input, textarea, select, [contenteditable]');
+function go(view) { const a = $(`.db-nav a[data-nav="${view}"]`); if (a) a.click(); }
+function keySheet() {
+    const old = $('#wKeys');
+    if (old) { old.close(); old.remove(); return; }
+    const rows = [...Object.entries(KEYS).map(([k, [label]]) => [k, label]), ...Object.entries(GO).map(([k, [, label]]) => ['g ' + k, label]), ['?', 'This list (Ctrl+/ always works)']];
+    const box = h('input', { type: 'checkbox' });
+    box.checked = charKeysOff;
+    box.addEventListener('change', () => {
+        charKeysOff = box.checked;
+        try { localStorage.setItem('fz-keys', charKeysOff ? 'off' : 'on'); } catch { /* ignore */ }
+    });
+    const d = h('dialog', { class: 'w-keys', id: 'wKeys', 'aria-label': 'Keyboard shortcuts' },
+        ...rows.map(([k, label]) => h('div', { class: 'w-keys-row' }, h('kbd', null, k), h('span', null, label))),
+        h('label', { class: 'w-keys-off' }, box, 'Turn off single-key shortcuts'));
+    d.addEventListener('close', () => d.remove());
+    d.addEventListener('click', (e) => { if (e.target === d) d.close(); });
+    document.body.append(d);
+    d.showModal();
+}
+$('#keysBtn').addEventListener('click', keySheet);
+document.addEventListener('keydown', (e) => {
+    if (!wideOn() || e.defaultPrevented || typing(e.target)) return;
+    if (e.ctrlKey && !e.metaKey && !e.altKey && (e.key === '/' || e.key === '?')) { e.preventDefault(); keySheet(); return; }
+    if (e.ctrlKey || e.metaKey || e.altKey || ($('#wKeys') && $('#wKeys').open)) return;   // the open sheet takes Esc, Tab and Space
+    if (charKeysOff && e.key.length === 1 && e.key !== ' ') return;
+    if (gPending) {
+        clearTimeout(gPending); gPending = null;
+        if (GO[e.key]) { e.preventDefault(); go(GO[e.key][0]); }
+        return;
+    }
+    if (KEYS[e.key] && currentView() === 'overview') { e.preventDefault(); KEYS[e.key][1](); return; }
+    if (e.key === '?') { e.preventDefault(); keySheet(); return; }
+    if (e.key === 'g') gPending = setTimeout(() => { gPending = null; }, 900);
+});
+
+function setRange(r) {
+    chRange = r;
     chExpanded = false;
     try { localStorage.setItem('fz-ch-range', chRange); } catch { /* ignore */ }
-    for (const x of $$('#chRange button')) x.setAttribute('aria-pressed', String(x === b));
+    for (const x of $$('#chRange button')) x.setAttribute('aria-pressed', String(x.dataset.r === r));
     if (stats) drawChannels(stats);
+}
+$('#chRange').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-r]');
+    if (b) setRange(b.dataset.r);
 });
 
 // ---------------- overview ----------------
@@ -332,9 +396,28 @@ function renderOverview(st) {
     renderPlatforms($('#platformCard'), $('#platforms'), st.byPlatform);
 }
 
+/** Wide's page bar: the sync state, as in the popup's footer. */
+function renderBarStatus(st) {
+    const s = st.settings || {}, sync = st.sync || {};
+    const sig = JSON.stringify([s.syncEnabled, sync.state, Math.floor((Date.now() - (sync.lastSyncAt || 0)) / 30000), sync.pendingSeconds]);
+    const el = $('#wBarStatus');
+    if (el.dataset.sig === sig) return;
+    el.dataset.sig = sig;
+    if (!s.syncEnabled) { el.replaceChildren(h('a', { href: '#settings', 'data-nav': 'settings', 'data-scroll': 'secSync' }, 'Sync to fazon.nexus Track')); return; }
+    const map = {
+        ok: ['ok', `Synced to fazon.nexus · ${ago(sync.lastSyncAt)}`],
+        pending: ['warn', `Sync pending · ${hm(sync.pendingSeconds || 0)} to send`],
+        error: ['bad', 'Sync error — retrying'],
+        'auth-error': ['bad', 'fazon.nexus rejected the key'],
+    };
+    const [dot, text] = map[sync.state] || ['', 'Sync on · waiting for the first sync'];
+    el.replaceChildren(h('span', { class: 'fz-dot ' + dot }), text);
+}
+
 export async function refresh() {
     try { stats = await send('getStats'); showError(''); }
     catch (e) { showError(`Couldn’t load your stats: ${e.message}`); return; }
+    renderBarStatus(stats);
     if (currentView() === 'overview') renderOverview(stats);
     updateSettingsFromStats(stats);
 }
