@@ -301,7 +301,8 @@
     // ---------- chrome.* ----------
     const listeners = { message: [], storage: [] };
     const store = (() => { try { return JSON.parse(localStorage.getItem('mock-storage') || '{}'); } catch { return {}; } })();
-    if (!store.theme) { try { store.theme = localStorage.getItem('fz-theme') || 'dark'; } catch { /* ignore */ } }
+    // no saved theme = never picked, like a fresh install: the pages follow the OS setting
+    if (!store.theme) { try { const t = localStorage.getItem('fz-theme'); if (t) store.theme = t; } catch { /* ignore */ } }
     const pick = (keys) => {
         if (keys == null) return { ...store };
         if (typeof keys === 'string') keys = [keys];

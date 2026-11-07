@@ -83,6 +83,7 @@ function drawHero(box, W, m) {
             s('text', { class: 'ch-ms-l next', x: P.l - 8, y: y + 4, 'text-anchor': 'end' }, hLabel(ms.next)),
             s('text', { class: 'ch-empty', x: P.l + iw / 2, y: P.t + ih * 0.6, 'text-anchor': 'middle' }, 'Your line starts with the first Japanese video you play.'),
         );
+        svg.setAttribute('aria-label', `Cumulative hours: nothing yet. The first milestone is ${hLabel(ms.next)}.`);
         box.replaceChildren(svg);
         return;
     }
@@ -397,6 +398,8 @@ function drawHeat(box, W, st) {
         showTip(r.left + r.width / 2, r.top, [longDay(k) + (k === st.todayKey ? ' · today' : ''), sec ? hm(sec) : 'No immersion']);
     });
     svg.addEventListener('pointerleave', hideTip);
+    const shown = keys.filter((k) => days[k] > 0).length;
+    svg.setAttribute('aria-label', `Immersion per day from ${longDay(keys[0])} to today: ${shown} of ${keys.length} days have time. Darker cells (brighter in dark mode) mean more.`);
     const wrap = h('div', { class: 'db-heat-scroll' }, svg);
     box.replaceChildren(wrap);
     wrap.scrollLeft = wrap.scrollWidth;

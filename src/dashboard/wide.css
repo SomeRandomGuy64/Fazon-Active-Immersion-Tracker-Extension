@@ -1,0 +1,277 @@
+/* =====================================================================================
+   Wide: the dashboard's desktop layout, the same design as fazon.nexus's Wide (Blog
+   static/css/wide.css): a slim sidebar, a sticky page bar, one quiet footer line, panes that
+   scroll on their own, hairlines instead of cards, 28px controls and rows. dashboard.js sets
+   html.layout-wide only in a landscape window of 1200px+, so nothing here has to work on a phone.
+   Standard's rules are in dashboard.css, untouched; this file loads after it.
+
+   Overview: the charts | an inspector (figures, goals, channels, platforms). From 2300px the
+   inspector splits into two columns, so everything shows at once on 21:9.
+   Settings: an index of the sections | the form.
+   ===================================================================================== */
+
+/* ---- tokens ---- */
+.layout-wide {
+    --w-fs-xs: 11px;      /* chart ticks, kbd hints */
+    --w-fs-sm: 12px;      /* secondary text, table heads */
+    --w-fs: 13px;         /* controls, tables, rows */
+    --w-fs-body: 14px;    /* running text */
+    --w-fs-h: 16px;       /* the page's name */
+    --w-fs-fig: 20px;     /* figures */
+    --w-fs-title: 24px;   /* the headline totals */
+    --w-ctl: 28px;        /* buttons, inputs, tabs */
+    --w-ctl-sm: 24px;     /* controls inside a row; the WCAG 2.2 floor, never smaller */
+    --w-row: 28px;
+    --w-r: 4px;
+    --w-gutter: 20px;
+    --w-side: 148px;      /* the sidebar */
+    --w-bar: 40px;        /* the page bar */
+    --w-foot: 29px;       /* the footer line, border included */
+    --w-insp: 380px;      /* the inspector pane */
+    --w-measure: 760px;   /* running text, the settings form */
+    --w-fill: calc(100vh - var(--w-bar) - var(--w-foot));
+    --w-hover: rgba(127, 127, 127, 0.1);
+    --w-sel: var(--fz-accent-soft);
+}
+.layout-wide body { margin: 0 0 0 var(--w-side); font-size: var(--w-fs-body); line-height: 1.5; }
+.layout-wide :focus-visible { outline: 2px solid var(--fz-accent); outline-offset: 1px; }
+.layout-wide .db { max-width: none; min-height: 100vh; margin: 0; padding: 0; display: flex; flex-direction: column; }
+
+/* ---- shell: the header becomes the sidebar ---- */
+.layout-wide .db-head {
+    position: fixed; inset: 0 auto 0 0; z-index: 30; box-sizing: border-box; width: var(--w-side);
+    display: flex; flex-direction: column; padding: 8px 12px 12px; overflow-y: auto;
+    background: var(--fz-surface); border-right: 1px solid var(--fz-line); border-bottom: 0;
+}
+.layout-wide .db-brand { order: 1; align-items: flex-start; gap: 8px; margin: 0 0 12px; padding: 2px 8px 0; }
+.layout-wide .db-logo { width: 20px; height: 20px; margin-top: 2px; }
+.layout-wide .db-title { font-size: var(--w-fs); line-height: 1.35; white-space: normal; letter-spacing: 0; }
+.layout-wide .db-brand:hover .db-title { opacity: 1; color: var(--fz-accent-ink); }
+.layout-wide .db-sub { font-size: var(--w-fs-xs); margin-top: 2px; }
+.layout-wide .db-tagline { display: none; }
+.layout-wide .db-nav { order: 2; flex-direction: column; gap: 0; margin: 0; font-size: var(--w-fs); }
+.layout-wide .db-nav a, .layout-wide .db-nav a:visited {
+    display: block; height: var(--w-ctl); padding: 0 8px; line-height: var(--w-ctl); border: 0; border-radius: var(--w-r); color: var(--text-color);
+}
+.layout-wide .db-nav a:hover { background: var(--w-hover); }
+.layout-wide .db-nav a[aria-current="page"] { background: var(--w-sel); box-shadow: inset 2px 0 0 var(--fz-accent); font-weight: 700; }
+/* the foot: the theme toggle, then the layout switch */
+.layout-wide .db-head > .toggle-button { order: 3; margin-top: auto; width: 44px; height: 24px; }
+.layout-wide .db-head > .toggle-button svg { width: 18px; height: 18px; left: 3px; margin-left: 0; }
+.layout-wide.light-mode .db-head > .toggle-button svg { left: 33px; }
+.layout-wide .db-layout {
+    order: 4; display: grid; grid-template-columns: 1.4fr 1fr; gap: 0; margin-top: 8px;
+    border: 1px solid var(--fz-line); border-radius: var(--w-r); overflow: hidden;
+}
+.layout-wide .db-layout button { height: 22px; padding: 0; border: 0; border-radius: 0; font-size: var(--w-fs-xs); line-height: 1; }
+.layout-wide .db-layout button + button { border-left: 1px solid var(--fz-line); }
+.layout-wide .db-layout button:hover { background: var(--w-hover); }
+.layout-wide .db-layout button[aria-pressed="true"] { background: var(--w-sel); border-color: var(--fz-line); color: var(--text-color); font-weight: 700; }
+.layout-wide .db-layout button:focus-visible { outline-offset: -2px; }
+
+/* ---- the page bar: the view's name on the left, its tools on the right ---- */
+.layout-wide .w-bar {
+    position: sticky; top: 0; z-index: 20; box-sizing: border-box; flex: none; height: var(--w-bar);
+    display: flex; align-items: center; gap: 16px; padding: 0 var(--w-gutter);
+    background: var(--bg-color); border-bottom: 1px solid var(--fz-line);
+}
+.layout-wide .w-bar-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.layout-wide .w-bar-name { font-size: var(--w-fs-h); font-weight: 700; white-space: nowrap; }
+.layout-wide .w-bar-tools { display: flex; align-items: center; gap: 12px; margin-left: auto; min-width: 0; }
+.layout-wide .db-bar-status { min-width: 0; font-size: var(--w-fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.layout-wide .db-bar-status .fz-dot { margin-right: 6px; vertical-align: 0.05em; }
+.layout-wide .db-err { margin: 0; padding: 8px var(--w-gutter); text-align: left; font-size: var(--w-fs); border-bottom: 1px solid var(--fz-line); }
+
+/* ---- the footer: one quiet line, always the same height, so the panes can count on it ---- */
+.layout-wide .db-foot {
+    box-sizing: border-box; flex: none; height: var(--w-foot); margin: 0; padding: 0 var(--w-gutter);
+    justify-content: space-between; flex-wrap: nowrap; gap: 16px; white-space: nowrap;
+    border-top: 1px solid var(--fz-line); font-size: var(--w-fs-xs);
+}
+.layout-wide .db-foot-links { flex-wrap: nowrap; gap: 0 8px; overflow: hidden; }
+
+/* ---- panes: columns that each scroll on their own, split by a hairline ---- */
+.layout-wide .db-view { margin: 0; gap: 0; height: var(--w-fill); min-height: 0; }
+.layout-wide .db-charts, .layout-wide .db-insp, .layout-wide .db-toc, .layout-wide .db-form-pane, .layout-wide .db-insp > .db-col {
+    box-sizing: border-box; min-width: 0; min-height: 0; overflow: auto;
+    scrollbar-width: thin; scrollbar-color: var(--fz-line) transparent;
+}
+.layout-wide .db-overview { display: grid; grid-template-columns: minmax(0, 1fr) var(--w-insp); align-items: stretch; }
+.layout-wide .db-overview > div { display: block; }
+.layout-wide .db-overview section { grid-column: auto; order: 0; }
+.layout-wide .db-charts { padding: 12px var(--w-gutter) 16px; }
+.layout-wide .db-insp { padding: 12px var(--w-gutter) 16px; border-left: 1px solid var(--fz-line); }
+.layout-wide .db-insp > .db-col { display: block; overflow: visible; }
+.layout-wide .db-insp > .db-col + .db-col { margin-top: 16px; }
+@media (min-width: 2300px) {
+    .layout-wide .db-overview { grid-template-columns: minmax(0, 1fr) 820px; }
+    .layout-wide .db-overview > .db-insp { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0; overflow: hidden; }
+    .layout-wide .db-insp > .db-col { overflow: auto; padding: 12px var(--w-gutter) 16px; }
+    .layout-wide .db-insp > .db-col + .db-col { margin: 0; border-left: 1px solid var(--fz-line); }
+}
+
+/* ---- sections: a heading on a hairline, not a box ---- */
+.layout-wide .fz-card { margin: 0 0 24px; padding: 0; background: none; border: 0; border-radius: 0; }
+.layout-wide .db-card-h, .layout-wide .db-glance-h {
+    display: flex; align-items: center; flex-wrap: nowrap; gap: 8px; min-height: var(--w-ctl); margin: 0 0 8px;
+    border-bottom: 1px solid var(--fz-line);
+}
+.layout-wide .db-card-h h2, .layout-wide .db-glance-h { font-size: var(--w-fs); font-weight: 700; white-space: nowrap; text-align: left; }
+.layout-wide .db-card-h h2 { flex: none; }
+/* the channels heading shares its line with the period switch: it gives way first */
+.layout-wide .db-channels .db-card-h h2 { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.layout-wide .db-card-h > :not(h2):last-child { margin-left: auto; }
+.layout-wide .db-card-sub { flex: 0 1 auto; font-size: var(--w-fs-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.layout-wide .db-goals-edit { flex: none; }
+.layout-wide .db-welcome { padding-left: 12px; border-left: 2px solid var(--fz-accent); }
+.layout-wide .db-welcome h2 { margin: 0 0 4px; font-size: var(--w-fs-body); }
+.layout-wide .db-welcome p { font-size: var(--w-fs-body); }
+.layout-wide .db-h3 { font-size: var(--w-fs); }
+
+/* ---- hero: the totals as a row of figures over the chart ---- */
+.layout-wide .db-hero-h { align-items: flex-end; flex-wrap: nowrap; gap: 24px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--fz-line); }
+.layout-wide .db-hero-totals, .layout-wide .db-hero-totals.two { flex: 1 1 auto; flex-wrap: nowrap; gap: 24px; min-width: 0; }
+.layout-wide .db-hero-totals.two .db-hero-total { flex: 0 1 auto; }
+.layout-wide .db-hero-totals.two .db-hero-total + .db-hero-total { padding-left: 24px; }
+.layout-wide .db-kicker { font-size: var(--w-fs-sm); text-transform: none; letter-spacing: 0; }
+.layout-wide .db-big, .layout-wide .db-hero-totals.two .db-big { margin-top: 0; font-size: var(--w-fs-title); line-height: 1.25; letter-spacing: 0; }
+.layout-wide .db-hero-sub { font-size: var(--w-fs-sm); }
+.layout-wide .db-hero-next { min-width: 200px; gap: 2px; }
+.layout-wide .db-hero-next .fz-bar { width: 200px; height: 4px; }
+.layout-wide .db-next-v { font-size: var(--w-fs-fig); }
+.layout-wide .db-hero-note, .layout-wide .db-hero-cap { font-size: var(--w-fs-body); }
+.layout-wide .db-track-note { max-width: 60ch; }
+.layout-wide .db-legend-inline { font-size: var(--w-fs-sm); flex-wrap: nowrap; white-space: nowrap; }
+.layout-wide .ch-x, .layout-wide .ch-y, .layout-wide .ch-ms-l, .layout-wide .ch-proj-l, .layout-wide .ch-goal-l { font-size: var(--w-fs-xs); }
+
+/* ---- rhythm: heatmap, then the typical week as one row of small bars ---- */
+.layout-wide .db-legend { font-size: var(--w-fs-sm); }
+.layout-wide .db-wd-h { margin: 16px 0 8px; padding: 0; border: 0; display: flex; align-items: center; min-height: var(--w-ctl); border-bottom: 1px solid var(--fz-line); }
+.layout-wide .db-wds { max-width: var(--w-measure); }
+.layout-wide .db-wd-plot { height: 72px; }
+.layout-wide .db-wd-v, .layout-wide .db-wd-l { font-size: var(--w-fs-sm); }
+@media (min-width: 2300px) {
+    /* room beside a year of heatmap: the typical week moves up next to it */
+    .layout-wide .db-rhythm { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 420px); grid-template-areas: "head head" "heat wdh" "heat prof" "legend prof"; grid-template-rows: auto auto 1fr auto; column-gap: 32px; }
+    .layout-wide .db-rhythm > .db-card-h { grid-area: head; }
+    .layout-wide #heat { grid-area: heat; min-width: 0; }
+    .layout-wide #heatLegend { grid-area: legend; }
+    .layout-wide .db-rhythm .db-wd-h { grid-area: wdh; margin: 0 0 8px; }
+    .layout-wide #profile { grid-area: prof; align-content: end; }
+}
+
+/* ---- at a glance: rows of label | figure, the sub-line under them ---- */
+.layout-wide .db-glance { margin: 0 0 24px; }
+.layout-wide .db-glance-h { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+.layout-wide .db-strip { display: block; background: none; border: 0; border-radius: 0; }
+.layout-wide .db-stat, .layout-wide .db-stat:nth-child(n) {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 0 12px;
+    padding: 6px 0; background: none; border-radius: 0; border-bottom: 1px solid var(--fz-line);
+}
+.layout-wide .db-stat-l { font-size: var(--w-fs); color: var(--text-color); }
+.layout-wide .db-stat-v { grid-column: 2; grid-row: 1; font-size: var(--w-fs-body); font-weight: 700; text-align: right; }
+.layout-wide .db-stat-s { grid-column: 1 / -1; font-size: var(--w-fs-sm); }
+.layout-wide .db-stat .fz-bar { grid-column: 1 / -1; height: 4px; margin: 4px 0 2px; }
+.layout-wide .db-stat .db-pace { grid-column: 1 / -1; justify-self: start; font-size: var(--w-fs-xs); border-radius: 3px; }
+.layout-wide .db-info { width: 18px; height: 18px; font-size: var(--w-fs-xs); }
+.layout-wide .db-info-tip { left: 0; right: auto; font-size: var(--w-fs-sm); }
+
+/* ---- goals: rows on hairlines ---- */
+.layout-wide .db-goals { display: block; }
+.layout-wide .db-goal { padding: 8px 0; border-bottom: 1px solid var(--fz-line); }
+.layout-wide .db-goal:first-child { padding-top: 0; }
+.layout-wide .db-goal-v { font-size: var(--w-fs-body); }
+.layout-wide .db-goal-by { font-size: var(--w-fs-sm); }
+.layout-wide .db-goal-h .db-pace { font-size: var(--w-fs-xs); border-radius: 3px; }
+.layout-wide .db-goal .fz-bar { height: 4px; margin: 4px 0; }
+.layout-wide .db-goal-s { font-size: var(--w-fs-body); }
+
+/* ---- channels: one row each, the bar under the name ---- */
+.layout-wide .db-chs { gap: 0; }
+.layout-wide .db-ch { padding: 6px 0; border-bottom: 1px solid var(--fz-line); }
+.layout-wide .db-ch-h { margin-bottom: 4px; }
+.layout-wide .db-ch-n, .layout-wide .db-ch-v { font-size: var(--w-fs); }
+.layout-wide .db-ch .fz-bar { height: 4px; }
+.layout-wide .db-ch.sep { margin-top: 0; padding-top: 6px; border-top: 0; }
+.layout-wide .db-ch-more { padding-top: 8px; font-size: var(--w-fs-sm); }
+.layout-wide .db-resolve { margin: 0 0 8px; font-size: var(--w-fs-sm); }
+
+/* ---- platforms: a hairlined table ---- */
+.layout-wide .db-plat { font-size: var(--w-fs); }
+.layout-wide .db-plat th, .layout-wide .db-plat td { height: var(--w-row); padding: 0 6px; }
+.layout-wide .db-plat th { font-size: var(--w-fs-sm); }
+.layout-wide .db-share { width: 48px; height: 4px; }
+
+/* ---- controls ---- */
+.layout-wide .fz-btn, .layout-wide .w-btn {
+    box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: var(--w-ctl); padding: 0 10px; border-radius: var(--w-r); font: inherit; font-size: var(--w-fs); line-height: 1; cursor: pointer; white-space: nowrap;
+}
+.layout-wide .w-btn { color: var(--text-color); background: transparent; border: 1px solid var(--fz-line); }
+.layout-wide .w-btn:hover { border-color: var(--fz-accent); }
+.layout-wide .fz-btn.small, .layout-wide .w-btn.sm { height: var(--w-ctl-sm); padding: 0 8px; font-size: var(--w-fs-sm); }
+.layout-wide .fz-btn[hidden], .layout-wide .w-btn[hidden] { display: none; }
+.layout-wide .fz-input, .layout-wide .fz-select {
+    height: var(--w-ctl); padding: 0 8px; border-radius: var(--w-r); font-size: var(--w-fs); background: var(--fz-surface);
+}
+.layout-wide textarea.fz-input { height: auto; padding: 6px 8px; font-size: var(--w-fs-sm); }
+.layout-wide .fz-linkbtn { font-size: var(--w-fs); min-height: var(--w-ctl-sm); }
+/* segmented control: one box with hairline dividers instead of a row of pills */
+.layout-wide main .fz-seg {
+    box-sizing: border-box; display: inline-flex; flex: none; flex-wrap: nowrap; gap: 0; height: var(--w-ctl-sm);
+    overflow: hidden; border: 1px solid var(--fz-line); border-radius: var(--w-r);
+}
+.layout-wide main .fz-seg button {
+    height: 100%; padding: 0 8px; border: 0; border-radius: 0; font-size: var(--w-fs-sm); line-height: 1; color: var(--fz-muted); background: transparent;
+}
+.layout-wide main .fz-seg button + button { border-left: 1px solid var(--fz-line); }
+.layout-wide main .fz-seg button:hover { color: var(--text-color); background: var(--w-hover); }
+.layout-wide main .fz-seg button[aria-pressed="true"] { color: var(--text-color); background: var(--w-sel); font-weight: 700; }
+.layout-wide main .fz-seg button:focus-visible { outline-offset: -2px; }
+.layout-wide .fz-tag { border-radius: 3px; font-size: var(--w-fs-xs); }
+.layout-wide kbd, .w-keys kbd {
+    display: inline-block; box-sizing: border-box; min-width: 18px; height: 18px; padding: 0 4px; border: 1px solid var(--fz-line); border-radius: 3px;
+    font: inherit; font-size: var(--w-fs-xs, 11px); line-height: 16px; text-align: center; color: var(--fz-muted); background: transparent;
+}
+.layout-wide .db-empty { padding: 24px 0; font-size: var(--w-fs); }
+
+/* ---- settings: the index | the form ---- */
+.layout-wide .db-settings { display: grid; grid-template-columns: 200px minmax(0, 1fr); max-width: none; width: auto; margin: 0; }
+.layout-wide .db-settings[hidden] { display: none; }
+.layout-wide .db-toc { display: flex; flex-direction: column; padding: 12px 12px 16px; font-size: var(--w-fs); }
+.layout-wide .db-toc a, .layout-wide .db-toc a:visited {
+    display: block; flex: none; height: var(--w-ctl); padding: 0 8px; line-height: var(--w-ctl); border-radius: var(--w-r);
+    color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.layout-wide .db-toc a:hover { background: var(--w-hover); text-decoration: none; }
+.layout-wide .db-toc a[aria-current="true"] { background: var(--w-sel); box-shadow: inset 2px 0 0 var(--fz-accent); font-weight: 700; }
+.layout-wide .db-form-pane { display: block; padding: 12px var(--w-gutter) 40vh; border-left: 1px solid var(--fz-line); }
+.layout-wide .db-form-pane > section { max-width: var(--w-measure); scroll-margin-top: 12px; }
+.layout-wide .db-settings .db-saved { margin-left: auto; font-size: var(--w-fs-sm); }
+.layout-wide .db-form { gap: 8px 16px; }
+.layout-wide .db-lbl { font-size: var(--w-fs); }
+.layout-wide .db-hint, .layout-wide .db-p, .layout-wide .db-steps { font-size: var(--w-fs-body); }
+.layout-wide .db-check-hint, .layout-wide .db-hint-inline { font-size: var(--w-fs-body); }
+.layout-wide .fz-check { font-size: var(--w-fs-body); }
+.layout-wide .db-sub-block > .fz-check { margin: 8px 0; }
+.layout-wide .db-sub-block { margin-top: 12px; padding-top: 12px; }
+.layout-wide .db-row { margin-top: 8px; gap: 8px; }
+.layout-wide .db-msg { font-size: var(--w-fs-sm); }
+.layout-wide .db-dl { font-size: var(--w-fs); gap: 4px 16px; }
+.layout-wide .db-adv summary, .layout-wide .db-mikan summary { font-size: var(--w-fs); }
+.layout-wide .db-goal-list li { font-size: var(--w-fs); padding: 4px 0; }
+.layout-wide .db-ov li { padding: 4px 8px 4px 10px; border-radius: var(--w-r); }
+.layout-wide .db-ov-rm { width: var(--w-ctl-sm); height: var(--w-ctl-sm); border-radius: var(--w-r); }
+.layout-wide .db-confirm { border-radius: var(--w-r); font-size: var(--w-fs); }
+.layout-wide .db-keymask { font-size: var(--w-fs) !important; }
+
+/* ---- the ? sheet (dashboard.js) ---- */
+.w-keys {
+    min-width: 280px; padding: 12px 16px; font-family: var(--fz-font); font-size: 13px; color: var(--text-color); background: var(--fz-surface);
+    border: 1px solid var(--fz-line); border-radius: 6px; box-shadow: var(--fz-shadow);
+}
+.w-keys::backdrop { background: rgba(0, 0, 0, 0.35); }
+.w-keys-row { display: flex; align-items: center; gap: 12px; height: 26px; }
+.w-keys-row kbd { min-width: 34px; }
+.w-keys-off { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--fz-line); cursor: pointer; }
+.w-keys-off input { accent-color: var(--fz-accent); width: 16px; height: 16px; margin: 0; }

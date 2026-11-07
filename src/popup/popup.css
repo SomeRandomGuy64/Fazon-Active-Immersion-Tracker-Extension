@@ -7,8 +7,8 @@ body { width: 360px; padding: 12px 14px 10px; font-size: 14px; line-height: 1.5;
 .pp-brand:hover { text-decoration: none; }
 .pp-logo { width: 26px; height: 26px; flex: none; }
 .pp-brand-t { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
-.pp-brand-t b { font-size: 0.86em; white-space: nowrap; letter-spacing: -0.01em; }
-.pp-brand-t .fz-wordmark { font-size: 0.66em; }
+.pp-name { margin: 0; font-size: 0.86em; font-weight: 700; line-height: inherit; letter-spacing: -0.01em; }
+.pp-brand-t .fz-wordmark { font-size: 11px; }
 .pp-tools { display: flex; align-items: center; gap: 2px; flex: none; }
 .pp-tools .toggle-button { margin-left: 6px; }
 
@@ -25,7 +25,7 @@ body { width: 360px; padding: 12px 14px 10px; font-size: 14px; line-height: 1.5;
 .pp-counter { text-align: right; line-height: 1.15; flex: none; }
 .pp-counter b { display: block; font-size: 1.25em; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
 .pp-now.live .pp-counter b { color: var(--fz-accent-ink); }
-.pp-counter span { font-size: 0.66em; color: var(--fz-muted); }
+.pp-counter span { font-size: 11px; color: var(--fz-muted); }
 .pp-chan { display: block; margin-top: 8px; font-weight: 700; font-size: 0.95em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; unicode-bidi: isolate; }
 .pp-title {
     margin-top: 1px; font-size: 0.82em; color: var(--fz-muted); unicode-bidi: isolate; overflow-wrap: anywhere;
@@ -70,12 +70,12 @@ body { width: 360px; padding: 12px 14px 10px; font-size: 14px; line-height: 1.5;
 .pp-wk-col.today .pp-wk-bar { background: var(--fz-accent); }
 .pp-wk-col.met .pp-wk-bar:not(.zero) { background: var(--fz-heat-4); }
 .pp-wk-col.today.met .pp-wk-bar { background: var(--fz-heat-5); }
-.pp-wk-d { font-size: 0.64em; color: var(--fz-muted); line-height: 1; }
+.pp-wk-d { font-size: 11px; color: var(--fz-muted); line-height: 1; }
 .pp-wk-col.today .pp-wk-d { color: var(--text-color); font-weight: 700; }
 .pp-wk-target { position: absolute; left: -2px; right: -2px; border-top: 1px dashed var(--fz-muted); opacity: 0.7; pointer-events: none; }
 .pp-wk-sum { flex: none; text-align: right; line-height: 1.25; padding-bottom: 2px; }
 .pp-wk-sum b { display: block; font-size: 0.98em; font-variant-numeric: tabular-nums; }
-.pp-wk-sum span { display: block; font-size: 0.66em; color: var(--fz-muted); }
+.pp-wk-sum span { display: block; font-size: 11px; color: var(--fz-muted); }
 .pp-wk-sum .pp-wk-bar-t { display: block; width: 74px; height: 4px; margin: 3px 0 0 auto; }
 .pp-wk-sum .pp-wk-bar-t.met > span { background: var(--fz-heat-5); }
 .pp-wk-sum .pp-wk-pace { margin-top: 2px; }

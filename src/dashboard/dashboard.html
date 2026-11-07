@@ -8,19 +8,20 @@
 <script src="../ui/theme-boot.js"></script>
 <link rel="stylesheet" href="../ui/theme.css">
 <link rel="stylesheet" href="dashboard.css">
+<link rel="stylesheet" href="wide.css">
 </head>
 <body>
 <div class="db">
 <header class="db-head">
   <a class="db-brand" href="#" data-nav="overview" title="Overview">
-    <svg class="db-logo" viewBox="0 0 128 128" aria-hidden="true"><rect x="4" y="4" width="120" height="120" rx="28" fill="var(--fz-accent)"/><path d="M64 22 A42 42 0 1 1 22 64" fill="none" stroke="#fff" stroke-opacity="0.92" stroke-width="9" stroke-linecap="round"/><path d="M22 64 A42 42 0 0 1 64 22" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="9" stroke-linecap="round"/><path d="M54 44.5 L85 64 L54 83.5 Z" fill="#fff" stroke="#fff" stroke-width="6" stroke-linejoin="round"/></svg>
-    <span class="db-brand-t"><span class="db-title">Active Immersion Tracker</span><span class="db-sub"><span class="fz-wordmark">fazon<span>.</span>nexus</span><span class="db-tagline"> · Japanese immersion time tracker</span></span></span>
+    <svg class="db-logo" viewBox="0 0 128 128" aria-hidden="true"><rect x="4" y="4" width="120" height="120" rx="28" fill="var(--fz-accent-fill)"/><path d="M64 22 A42 42 0 1 1 22 64" fill="none" stroke="#fff" stroke-opacity="0.92" stroke-width="9" stroke-linecap="round"/><path d="M22 64 A42 42 0 0 1 64 22" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="9" stroke-linecap="round"/><path d="M54 44.5 L85 64 L54 83.5 Z" fill="#fff" stroke="#fff" stroke-width="6" stroke-linejoin="round"/></svg>
+    <span class="db-brand-t"><h1 class="db-title">Active Immersion Tracker</h1><span class="db-sub"><span class="fz-wordmark">fazon<span>.</span>nexus</span><span class="db-tagline"> · Japanese immersion time tracker</span></span></span>
   </a>
   <nav class="db-nav" aria-label="Sections">
     <a href="#" data-nav="overview">Overview</a>
     <a href="#settings" data-nav="settings">Settings</a>
   </nav>
-  <span class="fz-seg db-layout" role="group" aria-label="Layout" id="layoutSeg">
+  <span class="fz-seg fz-layout-seg db-layout" role="group" aria-label="Layout" id="layoutSeg">
     <button type="button" data-layout="standard" aria-pressed="true" title="Centred column, like fazon.nexus">Standard</button>
     <button type="button" data-layout="wide" aria-pressed="false" title="Use the window’s width (up to 21:9)">Wide</button>
   </span>
@@ -30,10 +31,22 @@
   </button>
 </header>
 
+<!-- Wide only (wide.css hides it in standard): the page bar, name on the left, the view's tools on the right -->
+<div class="w-bar" id="wBar" role="region" aria-label="Page bar">
+  <div class="w-bar-title"><span class="w-bar-name" id="wBarTitle">Overview</span></div>
+  <div class="w-bar-tools" id="wBarTools">
+    <span class="db-bar-status fz-muted" id="wBarStatus"></span>
+    <button type="button" class="w-btn sm" id="keysBtn" title="Keyboard shortcuts (Ctrl+/)"><kbd>?</kbd> Shortcuts</button>
+  </div>
+</div>
+
 <p class="db-err fz-error" id="err" role="alert" hidden></p>
 
 <!-- ================= overview ================= -->
-<main id="viewOverview" class="db-view">
+<main id="viewOverview" class="db-view db-overview" aria-label="Overview">
+ <!-- panes: the charts | an inspector of figures and lists (two columns of it from 2300px). In
+      standard the wrappers are display: contents and each section's order puts them back in one column. -->
+ <div class="db-charts" id="paneCharts" role="region" aria-label="Charts">
   <section class="fz-card db-welcome" id="welcome" hidden>
     <h2>Nothing recorded yet</h2>
     <p>Play a Japanese video and it's counted while it plays with sound. The toolbar popup shows what's being counted right now, and lets you mark a video or channel as Japanese if detection misses it.</p>
@@ -62,18 +75,7 @@
     <p class="db-hero-cap" id="heroCap" hidden>Chart, milestones, projection and the figures below use this tracker’s own recordings.</p>
   </section>
 
-  <section class="db-strip" id="strip" aria-label="At a glance"></section>
-
-  <section class="fz-card" id="goalsCard" aria-labelledby="hGoals" hidden>
-    <div class="db-card-h">
-      <h2 id="hGoals">Goals</h2>
-      <span class="db-card-sub" id="goalsSrc"></span>
-      <a class="db-card-sub db-goals-edit" href="#settings" data-nav="settings" data-scroll="secGoals">Edit</a>
-    </div>
-    <ul class="db-goals" id="goals"></ul>
-  </section>
-
-  <section class="fz-card" aria-labelledby="hWeeks">
+  <section class="fz-card db-weeks" aria-labelledby="hWeeks">
     <div class="db-card-h">
       <h2 id="hWeeks">Week by week</h2>
       <span class="db-legend-inline" id="weeksLegend"></span>
@@ -81,8 +83,34 @@
     <div class="db-chart" id="weeksChart"></div>
   </section>
 
-  <div class="db-two">
-    <section class="fz-card" aria-labelledby="hCh">
+  <section class="fz-card db-rhythm" aria-labelledby="hRhythm">
+    <div class="db-card-h"><h2 id="hRhythm">Rhythm</h2><span class="db-card-sub" id="rhythmSub"></span></div>
+    <div id="heat"></div>
+    <div class="db-legend" id="heatLegend"></div>
+    <h3 class="db-h3 db-wd-h">Typical week <span class="fz-muted">· average h per day</span></h3>
+    <div class="db-wds" id="profile"></div>
+  </section>
+ </div>
+
+ <div class="db-insp" id="paneInsp">
+  <div class="db-col" role="region" aria-label="Figures and goals">
+  <section class="db-glance" aria-labelledby="hGlance">
+    <h2 class="db-glance-h" id="hGlance">At a glance</h2>
+    <div class="db-strip" id="strip"></div>
+  </section>
+
+  <section class="fz-card db-goals-card" id="goalsCard" aria-labelledby="hGoals" hidden>
+    <div class="db-card-h">
+      <h2 id="hGoals">Goals</h2>
+      <span class="db-card-sub" id="goalsSrc"></span>
+      <a class="db-card-sub db-goals-edit" href="#settings" data-nav="settings" data-scroll="secGoals">Edit</a>
+    </div>
+    <ul class="db-goals" id="goals"></ul>
+  </section>
+  </div>
+
+  <div class="db-col" role="region" aria-label="Channels and platforms">
+    <section class="fz-card db-channels" aria-labelledby="hCh">
       <div class="db-card-h">
         <h2 id="hCh">Who you're listening to</h2>
         <span class="fz-seg" role="group" aria-label="Period" id="chRange">
@@ -94,23 +122,20 @@
       <p class="db-resolve" id="chResolve" aria-live="polite" hidden></p>
       <div id="channels"></div>
     </section>
-    <section class="fz-card" aria-labelledby="hRhythm">
-      <div class="db-card-h"><h2 id="hRhythm">Rhythm</h2><span class="db-card-sub" id="rhythmSub"></span></div>
-      <div id="heat"></div>
-      <div class="db-legend" id="heatLegend"></div>
-      <h3 class="db-h3 db-wd-h">Typical week <span class="fz-muted">· average h per day</span></h3>
-      <div class="db-wds" id="profile"></div>
+
+    <section class="fz-card db-platforms" id="platformCard" aria-labelledby="hPlat" hidden>
+      <div class="db-card-h"><h2 id="hPlat">Platforms</h2></div>
+      <div class="db-plat-scroll"><table class="db-plat" id="platforms"></table></div>
     </section>
   </div>
-
-  <section class="fz-card" id="platformCard" aria-labelledby="hPlat" hidden>
-    <div class="db-card-h"><h2 id="hPlat">Platforms</h2></div>
-    <div class="db-plat-scroll"><table class="db-plat" id="platforms"></table></div>
-  </section>
+ </div>
 </main>
 
 <!-- ================= settings ================= -->
-<main id="viewSettings" class="db-view db-settings" hidden>
+<main id="viewSettings" class="db-view db-settings" aria-label="Settings" hidden>
+ <!-- wide: an index pane beside the form (built by settings.js from the sections' h2s) -->
+ <nav class="db-toc" id="settingsToc" aria-label="Settings sections"></nav>
+ <div class="db-form-pane" id="paneForm" role="region" aria-label="Settings form">
   <section class="fz-card" id="secDays" aria-labelledby="hDays">
     <div class="db-card-h"><h2 id="hDays">Days &amp; weeks</h2><span class="db-saved" id="savedDays" aria-live="polite"></span></div>
     <div class="db-form">
@@ -278,15 +303,16 @@
       <div class="db-row" id="resetRow"><button type="button" class="fz-btn danger" id="resetBtn">Reset all data…</button><span class="db-msg" id="resetMsg" aria-live="polite"></span></div>
     </div>
   </section>
+ </div>
 </main>
 
 <footer class="db-foot">
-  <a href="https://fazon.nexus/" target="_blank" rel="noopener">fazon.nexus</a>
+  <span class="db-foot-links"><a href="https://fazon.nexus/" target="_blank" rel="noopener">fazon.nexus</a>
   <span aria-hidden="true">·</span>
   <a href="https://fazon.nexus/track/" target="_blank" rel="noopener">Track</a>
   <span aria-hidden="true">·</span>
   <a href="https://fazon.nexus/developers/" target="_blank" rel="noopener">Developer API</a>
-  <span aria-hidden="true">·</span>
+  </span>
   <span id="version"></span>
 </footer>
 </div>

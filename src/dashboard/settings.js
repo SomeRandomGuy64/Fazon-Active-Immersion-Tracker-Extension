@@ -497,8 +497,39 @@ function wireData() {
 }
 
 // ---------------- entry points ----------------
+/**
+ * Wide's index pane: a link per section, the one being read marked as you scroll the form pane.
+ * (Standard hides the index; the form scrolls with the page there.)
+ */
+let markToc = () => {};
+function wireToc() {
+    const pane = $('#paneForm'), toc = $('#settingsToc');
+    const secs = [...pane.querySelectorAll(':scope > section')];
+    toc.replaceChildren(...secs.map((sec) => h('a', { href: '#settings', 'data-sec': sec.id }, sec.querySelector('h2').textContent)));
+    toc.addEventListener('click', (e) => {
+        const a = e.target.closest('a[data-sec]');
+        if (!a) return;
+        e.preventDefault();
+        document.getElementById(a.dataset.sec).scrollIntoView({ block: 'start' });
+        mark();
+    });
+    const mark = markToc = () => {
+        if (pane.offsetParent === null) return;   // the view is hidden: nothing to measure
+        const top = pane.getBoundingClientRect().top + 48;
+        let on = secs[0];
+        for (const sec of secs) if (sec.getBoundingClientRect().top <= top) on = sec;
+        // the last section can't scroll to the top: at the bottom, it's the one being read
+        if (pane.scrollHeight > pane.clientHeight && pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 2) on = secs[secs.length - 1];
+        for (const a of toc.children) a.setAttribute('aria-current', String(a.dataset.sec === on.id));
+    };
+    pane.addEventListener('scroll', mark, { passive: true });
+    window.addEventListener('resize', mark);
+    mark();
+}
+
 export function initSettings(c) {
     ctx = { ...ctx, ...c };
+    wireToc();
     wireDays();
     wireMilestones();
     wireGoals();
@@ -508,6 +539,7 @@ export function initSettings(c) {
 }
 
 export async function onSettingsShown() {
+    setTimeout(markToc);
     try {
         const r = await send('getSettings');
         settings = r.settings;

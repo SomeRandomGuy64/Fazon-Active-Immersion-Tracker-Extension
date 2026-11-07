@@ -1,12 +1,16 @@
-// Theme: 'dark' (default) | 'light', stored in chrome.storage.local `theme` and shared by the
-// popup and dashboard. theme-boot.js has already applied the cached value before first paint;
-// this reconciles it with storage, wires the toggle(s) and follows changes made in other pages.
+// Theme: 'dark' | 'light', stored in chrome.storage.local `theme` and shared by the popup and
+// dashboard. Until one is picked, the OS light/dark setting decides, and is followed live.
+// theme-boot.js has already applied the cached value before first paint; this reconciles it with
+// storage, wires the toggle(s) and follows changes made in other pages.
 
 const KEY = 'theme';
 const MIRROR = 'fz-theme';
 let current = document.documentElement.classList.contains('light-mode') ? 'light' : 'dark';
 const toggles = new Set();
 let fadeTimer;
+let picked = false;   // a theme saved in storage beats the OS setting
+const osLight = window.matchMedia ? matchMedia('(prefers-color-scheme: light)') : null;
+const osTheme = () => (osLight && osLight.matches ? 'light' : 'dark');
 
 function apply(theme, animate) {
     theme = theme === 'light' ? 'light' : 'dark';
@@ -18,7 +22,7 @@ function apply(theme, animate) {
     }
     current = theme;
     root.classList.toggle('light-mode', theme === 'light');
-    try { localStorage.setItem(MIRROR, theme); } catch { /* ignore */ }
+    try { if (picked) localStorage.setItem(MIRROR, theme); else localStorage.removeItem(MIRROR); } catch { /* ignore */ }
     for (const btn of toggles) syncButton(btn);
     document.dispatchEvent(new CustomEvent('fz-theme', { detail: { theme } }));
 }
@@ -32,6 +36,7 @@ function syncButton(btn) {
 export function getTheme() { return current; }
 
 export async function setTheme(theme) {
+    picked = true;
     apply(theme, true);
     try { await chrome.storage.local.set({ [KEY]: current }); } catch { /* ignore */ }
 }
@@ -45,9 +50,13 @@ export async function initTheme() {
     });
     try {
         chrome.storage.onChanged.addListener((changes, area) => {
-            if (area === 'local' && changes[KEY]) apply(changes[KEY].newValue, true);
+            if (area !== 'local' || !changes[KEY]) return;
+            picked = !!changes[KEY].newValue;
+            apply(changes[KEY].newValue || osTheme(), true);
         });
+        if (osLight) osLight.addEventListener('change', () => { if (!picked) apply(osTheme(), true); });
         const got = await chrome.storage.local.get(KEY);
-        apply(got[KEY] || 'dark', false);
+        picked = got[KEY] === 'light' || got[KEY] === 'dark';
+        apply(picked ? got[KEY] : osTheme(), false);
     } catch { /* outside an extension page: keep the cached theme */ }
 }

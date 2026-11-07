@@ -11,8 +11,8 @@
 <body>
 <header class="pp-head">
   <a class="pp-brand" href="https://fazon.nexus/" target="_blank" rel="noopener" title="fazon.nexus">
-    <svg class="pp-logo" viewBox="0 0 128 128" aria-hidden="true"><rect x="4" y="4" width="120" height="120" rx="28" fill="var(--fz-accent)"/><path d="M64 22 A42 42 0 1 1 22 64" fill="none" stroke="#fff" stroke-opacity="0.92" stroke-width="10" stroke-linecap="round"/><path d="M22 64 A42 42 0 0 1 64 22" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="10" stroke-linecap="round"/><path d="M54 44.5 L85 64 L54 83.5 Z" fill="#fff" stroke="#fff" stroke-width="6" stroke-linejoin="round"/></svg>
-    <span class="pp-brand-t"><b>Active Immersion Tracker</b><span class="fz-wordmark">fazon<span>.</span>nexus</span></span>
+    <svg class="pp-logo" viewBox="0 0 128 128" aria-hidden="true"><rect x="4" y="4" width="120" height="120" rx="28" fill="var(--fz-accent-fill)"/><path d="M64 22 A42 42 0 1 1 22 64" fill="none" stroke="#fff" stroke-opacity="0.92" stroke-width="10" stroke-linecap="round"/><path d="M22 64 A42 42 0 0 1 64 22" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="10" stroke-linecap="round"/><path d="M54 44.5 L85 64 L54 83.5 Z" fill="#fff" stroke="#fff" stroke-width="6" stroke-linejoin="round"/></svg>
+    <span class="pp-brand-t"><h1 class="pp-name">Active Immersion Tracker</h1><span class="fz-wordmark">fazon<span>.</span>nexus</span></span>
   </a>
   <div class="pp-tools">
     <button type="button" class="fz-iconbtn" id="openDashboard" title="Open dashboard" aria-label="Open dashboard">
@@ -28,6 +28,7 @@
   </div>
 </header>
 
+<main class="pp-main">
 <section class="pp-now" id="now" aria-live="polite">
   <div class="pp-now-top"><span class="pp-state"><span class="fz-dot"></span><span>Checking this tab…</span></span></div>
 </section>
@@ -37,6 +38,7 @@
 <button type="button" class="pp-week" id="week" title="Open the dashboard"></button>
 
 <p class="pp-err fz-error" id="err" hidden></p>
+</main>
 
 <footer class="pp-foot" id="foot"></footer>
 
