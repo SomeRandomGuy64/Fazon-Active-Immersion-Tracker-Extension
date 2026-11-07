@@ -60,10 +60,11 @@
 .layout-wide .db-head > .toggle-button svg { width: 18px; height: 18px; left: 3px; margin-left: 0; }
 .layout-wide.light-mode .db-head > .toggle-button svg { left: 33px; }
 .layout-wide .db-layout {
-    order: 4; display: grid; grid-template-columns: 1.4fr 1fr; gap: 0; margin-top: 8px;
+    order: 4; display: flex; gap: 0; margin-top: 8px;
     border: 1px solid var(--fz-line); border-radius: var(--w-r); overflow: hidden;
 }
-.layout-wide .db-layout button { height: 22px; padding: 0; border: 0; border-radius: 0; font-size: var(--w-fs-xs); line-height: 1; }
+/* each label gets its own breathing room; 24px tall, the WCAG 2.2 target floor */
+.layout-wide .db-layout button { flex: 1 1 auto; height: var(--w-ctl-sm); padding: 0 8px; border: 0; border-radius: 0; font-size: var(--w-fs-sm); line-height: 1; }
 .layout-wide .db-layout button + button { border-left: 1px solid var(--fz-line); }
 .layout-wide .db-layout button:hover { background: var(--w-hover); }
 .layout-wide .db-layout button[aria-pressed="true"] { background: var(--w-sel); border-color: var(--fz-line); color: var(--text-color); font-weight: 700; }
